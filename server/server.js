@@ -4,7 +4,7 @@ var http            = require('http');
 var express         = require('express');
 var WebSocketServer = require('ws').Server;
 
-var lastRecieved = Date.now();
+var lastReceived = Date.now();
 
 // Patch console.x methods in order to add timestamp information
 require( "console-stamp" )( console, { pattern : "mm/dd/yyyy HH:MM:ss.l" } );
@@ -89,7 +89,7 @@ var MainServer = function() {
         self.app.use(express.static(__dirname + '/../' + (process.argv[2] || 'client')));
 
         self.wss.on('connection', function(ws) {
-            lastRecieved = Date.now();
+            lastReceived = Date.now();
             var updateCount = 0;
 
             var id = setInterval(function() {
@@ -100,8 +100,8 @@ var MainServer = function() {
 
             ws.on('message', function(data) {
                 var nowTime = Date.now();
-                var gap = nowTime - lastRecieved;
-                lastRecieved = nowTime;
+                var gap = nowTime - lastReceived;
+                lastReceived = nowTime;
 
                 var arr = new Uint32Array(data);
 
