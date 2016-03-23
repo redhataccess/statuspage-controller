@@ -1,0 +1,27 @@
+{
+  "name": "nodejs-ws-server",
+  "version": "0.0.1",
+  "description": "A skeleton Node.js WebSocket server for building multi-user applications.",
+  "keywords": [
+    "Node.js",
+    "application"
+  ],
+  "author": {
+    "name": "Jared Sprague",
+    "email": "jared@scripta.co",
+    "url": "http://scripta.co/"
+  },
+  "homepage": "http://scripta.co/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jared-Sprague/nodejs-ws-server"
+  },
+  "dependencies": {
+    "express": "^4.13.4",
+    "ws": "~1.0.1"
+  },
+  "devDependencies": {},
+  "bundleDependencies": [],
+  "private": true,
+  "main": "server/server.js"
+}
