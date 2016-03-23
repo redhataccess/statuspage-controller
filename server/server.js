@@ -1,5 +1,6 @@
 #!/bin/env node
 //  Sample Node.js WebSocket Client-Server application
+var http    = require('http');
 var express = require('express');
 var fs      = require('fs');
 
@@ -9,7 +10,7 @@ require( "console-stamp" )( console, { pattern : "mm/dd/yyyy HH:MM:ss.l" } );
 /**
  *  Define the sample server.
  */
-var SampleServer = function() {
+var MainServer = function() {
 
     //  Scope.
     var self = this;
@@ -105,6 +106,7 @@ var SampleServer = function() {
     self.initializeServer = function() {
         self.createRoutes();
         self.app = express();
+        self.httpServer = http.Server(self.app);
 
         //  Add handlers for the app (from the routes).
         for (var r in self.routes) {
@@ -116,7 +118,7 @@ var SampleServer = function() {
 
 
     /**
-     *  Initializes the sample application.
+     *  Initializes the server
      */
     self.initialize = function() {
         self.setupVariables();
@@ -129,11 +131,11 @@ var SampleServer = function() {
 
 
     /**
-     *  Start the server (starts up the sample application).
+     *  Start the server
      */
     self.start = function() {
         //  Start the app on the specific interface (and port).
-        self.app.listen(self.port, function() {
+        self.httpServer.listen(self.port, function() {
             console.log('Node server started on localhost:%d ...', self.port);
         });
     };
@@ -143,7 +145,7 @@ var SampleServer = function() {
 /**
  *  main():  Main code.
  */
-var mainServer = new SampleServer();
+var mainServer = new MainServer();
 mainServer.initialize();
 mainServer.start();
 
