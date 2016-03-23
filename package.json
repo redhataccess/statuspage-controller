@@ -18,10 +18,14 @@
   },
   "dependencies": {
     "express": "^4.13.4",
-    "ws": "~1.0.1"
+    "ws": "~1.0.1",
+    "console-stamp": "~0.2.0"
   },
   "devDependencies": {},
   "bundleDependencies": [],
   "private": true,
-  "main": "server/server.js"
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js"
+  }
 }

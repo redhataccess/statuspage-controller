@@ -3,11 +3,13 @@
 var express = require('express');
 var fs      = require('fs');
 
+// Patch console.x methods in order to add timestamp information
+require( "console-stamp" )( console, { pattern : "mm/dd/yyyy HH:MM:ss.l" } );
 
 /**
- *  Define the sample application.
+ *  Define the sample server.
  */
-var SampleApp = function() {
+var SampleServer = function() {
 
     //  Scope.
     var self = this;
@@ -18,19 +20,11 @@ var SampleApp = function() {
     /*  ================================================================  */
 
     /**
-     *  Set up server IP address and port # using env variables/defaults.
+     *  Set up server env variables/defaults.
      */
     self.setupVariables = function() {
         //  Set the environment variables we need.
-        self.ipaddress = process.env.OPENSHIFT_NODEJS_IP;
-        self.port      = process.env.OPENSHIFT_NODEJS_PORT || 8080;
-
-        if (typeof self.ipaddress === "undefined") {
-            //  Log errors on OpenShift but continue w/ 127.0.0.1 - this
-            //  allows us to run/test the app locally.
-            console.warn('No OPENSHIFT_NODEJS_IP var, using 127.0.0.1');
-            self.ipaddress = "127.0.0.1";
-        };
+        self.port = process.env.PORT || 8080;
     };
 
 
@@ -43,7 +37,7 @@ var SampleApp = function() {
         }
 
         //  Local cache for static content.
-        self.zcache['index.html'] = fs.readFileSync('./index.html');
+        self.zcache['index.html'] = fs.readFileSync('./client/index.html');
     };
 
 
@@ -57,29 +51,26 @@ var SampleApp = function() {
     /**
      *  terminator === the termination handler
      *  Terminate server on receipt of the specified signal.
-     *  @param {string} sig  Signal to terminate on.
      */
     self.terminator = function(sig){
         if (typeof sig === "string") {
-           console.log('%s: Received %s - terminating sample app ...',
-                       Date(Date.now()), sig);
+           console.log('Received %s - terminating sample server ...', sig);
            process.exit(1);
         }
-        console.log('%s: Node server stopped.', Date(Date.now()) );
+        console.log('Node server stopped.');
     };
 
 
     /**
      *  Setup termination handlers (for exit and a list of signals).
      */
-    self.setupTerminationHandlers = function(){
+    self.setupTerminationHandlers = function() {
         //  Process on exit and signals.
-        process.on('exit', function() { self.terminator(); });
+        process.on('exit', function() { self.terminator(0); });
 
-        // Removed 'SIGPIPE' from the list - bugz 852598.
         ['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT',
          'SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM'
-        ].forEach(function(element, index, array) {
+        ].forEach(function(element) {
             process.on(element, function() { self.terminator(element); });
         });
     };
@@ -113,11 +104,13 @@ var SampleApp = function() {
      */
     self.initializeServer = function() {
         self.createRoutes();
-        self.app = express.createServer();
+        self.app = express();
 
         //  Add handlers for the app (from the routes).
         for (var r in self.routes) {
-            self.app.get(r, self.routes[r]);
+            if (self.routes.hasOwnProperty(r)) {
+                self.app.get(r, self.routes[r]);
+            }
         }
     };
 
@@ -140,20 +133,17 @@ var SampleApp = function() {
      */
     self.start = function() {
         //  Start the app on the specific interface (and port).
-        self.app.listen(self.port, self.ipaddress, function() {
-            console.log('%s: Node server started on %s:%d ...',
-                        Date(Date.now() ), self.ipaddress, self.port);
+        self.app.listen(self.port, function() {
+            console.log('Node server started on localhost:%d ...', self.port);
         });
     };
-
-};   /*  Sample Application.  */
-
+};
 
 
 /**
  *  main():  Main code.
  */
-var zapp = new SampleApp();
-zapp.initialize();
-zapp.start();
+var mainServer = new SampleServer();
+mainServer.initialize();
+mainServer.start();
 
