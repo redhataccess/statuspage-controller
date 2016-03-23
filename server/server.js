@@ -1,8 +1,10 @@
 #!/bin/env node
 //  Sample Node.js WebSocket Client-Server application
-var http    = require('http');
-var express = require('express');
-var fs      = require('fs');
+var http            = require('http');
+var express         = require('express');
+var WebSocketServer = require('ws').Server;
+
+var lastRecieved = Date.now();
 
 // Patch console.x methods in order to add timestamp information
 require( "console-stamp" )( console, { pattern : "mm/dd/yyyy HH:MM:ss.l" } );
@@ -27,26 +29,6 @@ var MainServer = function() {
         //  Set the environment variables we need.
         self.port = process.env.PORT || 8080;
     };
-
-
-    /**
-     *  Populate the cache.
-     */
-    self.populateCache = function() {
-        if (typeof self.zcache === "undefined") {
-            self.zcache = { 'index.html': '' };
-        }
-
-        //  Local cache for static content.
-        self.zcache['index.html'] = fs.readFileSync('./client/index.html');
-    };
-
-
-    /**
-     *  Retrieve entry (content) from cache.
-     *  @param {string} key  Key identifying content to retrieve from cache.
-     */
-    self.cache_get = function(key) { return self.zcache[key]; };
 
 
     /**
@@ -87,14 +69,9 @@ var MainServer = function() {
     self.createRoutes = function() {
         self.routes = { };
 
-        self.routes['/asciimo'] = function(req, res) {
-            var link = "http://i.imgur.com/kmbjB.png";
-            res.send("<html><body><img src='" + link + "'></body></html>");
-        };
-
-        self.routes['/'] = function(req, res) {
-            res.setHeader('Content-Type', 'text/html');
-            res.send(self.cache_get('index.html') );
+        self.routes['/api/example'] = function(req, res) {
+            res.setHeader('Content-Type', 'application/json');
+            res.send("{}");
         };
     };
 
@@ -107,6 +84,38 @@ var MainServer = function() {
         self.createRoutes();
         self.app = express();
         self.httpServer = http.Server(self.app);
+        self.wss = new WebSocketServer({server: self.httpServer});
+
+        self.app.use(express.static(__dirname + '/../' + (process.argv[2] || 'client')));
+
+        self.wss.on('connection', function(ws) {
+            lastRecieved = Date.now();
+            var updateCount = 0;
+
+            var id = setInterval(function() {
+                ws.send(JSON.stringify(++updateCount), function() { /*ignore error*/ });
+            }, 100);
+
+            console.log('started client interval');
+
+            ws.on('message', function(data) {
+                var nowTime = Date.now();
+                var gap = nowTime - lastRecieved;
+                lastRecieved = nowTime;
+
+                var arr = new Uint32Array(data);
+
+                if (gap > 100 || arr[0] >= 104 ) {
+                    console.log("buffered Amount, gap: ", arr[0], gap);
+                }
+            });
+
+            ws.on('close', function() {
+                console.log('stopping client interval');
+                clearInterval(id);
+            });
+        });
+
 
         //  Add handlers for the app (from the routes).
         for (var r in self.routes) {
@@ -122,7 +131,6 @@ var MainServer = function() {
      */
     self.initialize = function() {
         self.setupVariables();
-        self.populateCache();
         self.setupTerminationHandlers();
 
         // Create the express server and routes.
