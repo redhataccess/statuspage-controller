@@ -7,12 +7,12 @@ var WebSocketServer = require('ws').Server;
 var lastReceived = Date.now();
 
 // Patch console.x methods in order to add timestamp information
-require( "console-stamp" )( console, { pattern : "mm/dd/yyyy HH:MM:ss.l" } );
+require("console-stamp")(console, {pattern: "mm/dd/yyyy HH:MM:ss.l"});
 
 /**
  *  Define the sample server.
  */
-var MainServer = function() {
+var MainServer = function () {
 
     //  Scope.
     var self = this;
@@ -25,7 +25,7 @@ var MainServer = function() {
     /**
      *  Set up server env variables/defaults.
      */
-    self.setupVariables = function() {
+    self.setupVariables = function () {
         //  Set the environment variables we need.
         self.port = process.env.PORT || 8080;
     };
@@ -35,10 +35,10 @@ var MainServer = function() {
      *  terminator === the termination handler
      *  Terminate server on receipt of the specified signal.
      */
-    self.terminator = function(sig){
+    self.terminator = function (sig) {
         if (typeof sig === "string") {
-           console.log('Received %s - terminating sample server ...', sig);
-           process.exit(1);
+            console.log('Received %s - terminating sample server ...', sig);
+            process.exit(1);
         }
         console.log('Node server stopped.');
     };
@@ -47,7 +47,7 @@ var MainServer = function() {
     /**
      *  Setup termination handlers (for exit and a list of signals).
      */
-    self.setupTerminationHandlers = function() {
+    self.setupTerminationHandlers = function () {
         //  Process on exit and signals.
         process.on('exit', function() { self.terminator(0); });
 
@@ -66,10 +66,10 @@ var MainServer = function() {
     /**
      *  Create the routing table entries + handlers for the application.
      */
-    self.createRoutes = function() {
-        self.routes = { };
+    self.createRoutes = function () {
+        self.routes = {};
 
-        self.routes['/api/example'] = function(req, res) {
+        self.routes['/api/example'] = function (req, res) {
             res.setHeader('Content-Type', 'application/json');
             res.send("{}");
         };
@@ -80,7 +80,7 @@ var MainServer = function() {
      *  Initialize the server (express) and create the routes and register
      *  the handlers.
      */
-    self.initializeServer = function() {
+    self.initializeServer = function () {
         self.createRoutes();
         self.app = express();
         self.httpServer = http.Server(self.app);
@@ -88,7 +88,7 @@ var MainServer = function() {
 
         self.app.use(express.static(__dirname + '/../' + (process.argv[2] || 'client')));
 
-        self.wss.on('connection', function(ws) {
+        self.wss.on('connection', function (ws) {
             lastReceived = Date.now();
             var updateCount = 0;
 
@@ -98,19 +98,19 @@ var MainServer = function() {
 
             console.log('started client interval');
 
-            ws.on('message', function(data) {
+            ws.on('message', function (data) {
                 var nowTime = Date.now();
                 var gap = nowTime - lastReceived;
                 lastReceived = nowTime;
 
                 var arr = new Uint32Array(data);
 
-                if (gap > 100 || arr[0] >= 104 ) {
+                if (gap > 100 || arr[0] >= 104) {
                     console.log("buffered Amount, gap: ", arr[0], gap);
                 }
             });
 
-            ws.on('close', function() {
+            ws.on('close', function () {
                 console.log('stopping client interval');
                 clearInterval(id);
             });
@@ -129,7 +129,7 @@ var MainServer = function() {
     /**
      *  Initializes the server
      */
-    self.initialize = function() {
+    self.initialize = function () {
         self.setupVariables();
         self.setupTerminationHandlers();
 
@@ -141,9 +141,9 @@ var MainServer = function() {
     /**
      *  Start the server
      */
-    self.start = function() {
+    self.start = function () {
         //  Start the app on the specific interface (and port).
-        self.httpServer.listen(self.port, function() {
+        self.httpServer.listen(self.port, function () {
             console.log('Node server started on localhost:%d ...', self.port);
         });
     };
