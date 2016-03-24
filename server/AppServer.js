@@ -28,7 +28,7 @@ var AppServer = function (wss) {
 
     self.wss.on('connection', function (ws) {
 
-        console.log('Client connected');
+        console.log('Client connected headers:', JSON.stringify(ws.upgradeReq.headers));
 
         // parse query string
         var queryString = URL.parse(ws.upgradeReq.url, true).query;
