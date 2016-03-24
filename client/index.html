@@ -1,43 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <style>
-    body {
-      font-family: Tahoma, Geneva, sans-serif;
-    }
+    <style>
+        body {
+            font-family: Tahoma, Geneva, sans-serif;
+        }
 
-    div {
-      display: inline;
-    }
-  </style>
-  <script>
-    function updateStats(updateCount) {
-      document.getElementById('update').innerHTML = updateCount;
-    }
+        div {
+            display: inline;
+        }
+    </style>
+    <script>
+        function updateStats(updateCount) {
+            document.getElementById('update').innerHTML = updateCount;
+        }
 
-    var host = window.document.location.host.replace(/:.*/, '');
+        var host = window.document.location.host.replace(/:.*/, '');
 
-    var ws = new WebSocket('ws://' + host + ':8080');
+        var ws = new WebSocket('ws://' + host + ':3000');
 
-    ws.onmessage = function (msg) {
-      var updateCount = JSON.parse(msg.data);
-      updateStats(updateCount);
-    };
+        ws.onopen = function () {
+            console.log("WebSocket connection established and ready.");
+        };
 
-    var buffer = new ArrayBuffer(52); // total bytes in message
-    var data_view = new Uint32Array(buffer);
-    data_view[0] = ws.bufferedAmount;
+        ws.onmessage = function (msg) {
+            var updateCount = JSON.parse(msg.data);
+            updateStats(updateCount);
+        };
 
-    function send() {
-      ws.send(buffer, { binary: true, mask: true });
-    }
+        var binarySentCount = 0;
 
-    setInterval(send, 50);
+        function sendBinary() {
+            var buffer = new ArrayBuffer(32);
+            var data_view = new Int32Array(buffer);
+            data_view[0] = ++binarySentCount;
 
-  </script>
+            ws.send(buffer, {binary: true});
+        }
+
+        function sendString() {
+            var pn = performance.now();
+            ws.send("performance.now() = " + pn);
+        }
+
+        setInterval(sendBinary, 50);
+        setInterval(sendString, 1000);
+
+    </script>
 </head>
 <body>
-<strong>Server Stats</strong><br>
-upcate count: <div id='update'></div><br>
+Server count:
+<div id='update'></div>
+<br>
 </body>
 </html>
