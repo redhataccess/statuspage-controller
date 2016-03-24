@@ -24,8 +24,9 @@
         };
 
         ws.onmessage = function (msg) {
-            var updateCount = JSON.parse(msg.data);
-            updateStats(updateCount);
+            var data = JSON.parse(msg.data);
+            updateStats(data);
+            console.log(data);
         };
 
         var binarySentCount = 0;

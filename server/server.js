@@ -3,6 +3,7 @@
 var http            = require('http');
 var express         = require('express');
 var WebSocketServer = require('ws').Server;
+var AppServer       = require('./AppServer.js');
 
 // Patch console.x methods in order to add timestamp information
 require("console-stamp")(console, {pattern: "mm/dd/yyyy HH:MM:ss.l"});
@@ -85,47 +86,9 @@ var MainServer = function () {
 
         // Set up WebSocket Server
         self.wss = new WebSocketServer({server: self.httpServer});
-        self.wss.broadcast = function broadcast(data) {
-            self.wss.clients.forEach(function each(client) {
-                client.send(data);
-            });
-        };
 
-        var updateCount = 0;
-
-        setInterval(function() {
-            // send to all clients
-            self.wss.broadcast(JSON.stringify(++updateCount));
-        }, 100);
-
-        self.wss.on('connection', function (ws) {
-
-            console.log('started client interval');
-
-            ws.on('message', function (msg, flags) {
-                if (flags.binary) {
-                    var ab = toArrayBuffer(msg);
-                    var arr = new Int32Array(ab);
-                    console.log(arr[0]);
-                }
-                else {
-                    console.log(msg);
-                }
-            });
-
-            ws.on('close', function () {
-                console.log('Client connection closed');
-            });
-
-            function toArrayBuffer(buffer) {
-                var ab = new ArrayBuffer(buffer.length);
-                var view = new Uint8Array(ab);
-                for (var i = 0; i < buffer.length; ++i) {
-                    view[i] = buffer[i];
-                }
-                return ab;
-            }
-        });
+        // The app server contains all the logic and state of the WebSocket app
+        self.appServer = new AppServer(self.wss);
 
         // Set up express static content root
         self.app.use(express.static(__dirname + '/../' + (process.argv[2] || 'client')));
