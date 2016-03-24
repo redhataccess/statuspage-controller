@@ -1,5 +1,10 @@
 var NODEJS = typeof module !== 'undefined' && module.exports;
 
+/**
+ * This module contains all of the app logic and state,
+ * @param wss
+ * @constructor
+ */
 var AppServer = function (wss) {
     //  Scope.
     var self = this;
