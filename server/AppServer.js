@@ -1,5 +1,7 @@
 var NODEJS = typeof module !== 'undefined' && module.exports;
 
+var URL = require('url');
+
 /**
  * This module contains all of the app logic and state,
  * @param wss
@@ -16,6 +18,7 @@ var AppServer = function (wss) {
         });
     };
 
+    // Example state
     var updateCount = 0;
 
     setInterval(function() {
@@ -26,6 +29,13 @@ var AppServer = function (wss) {
     self.wss.on('connection', function (ws) {
 
         console.log('Client connected');
+
+        // parse query string
+        var queryString = URL.parse(ws.upgradeReq.url, true).query;
+
+        var name = queryString.name;
+
+        console.log("Name:", name);
 
         self.wss.broadcast(JSON.stringify("Client joined"));
 
