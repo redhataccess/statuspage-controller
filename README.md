@@ -1,2 +1,2 @@
-# nodejs-ws-server
-A skeleton Node.js WebSocket server for building multi-user applications.  Makes no assumptions about your application.
+#Status Page Controller
+Automates the setting of status page components based on a monitoring scheme.
