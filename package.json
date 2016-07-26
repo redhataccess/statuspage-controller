@@ -18,8 +18,8 @@
   },
   "dependencies": {
     "express": "^4.13.4",
-    "ws": "~1.0.1",
-    "console-stamp": "~0.2.0"
+    "console-stamp": "~0.2.0",
+    "node-rest-client": "~2.0.1"
   },
   "devDependencies": {},
   "bundleDependencies": [],

@@ -2,7 +2,6 @@
 //  Sample Node.js WebSocket Client-Server application
 var http            = require('http');
 var express         = require('express');
-var WebSocketServer = require('ws').Server;
 var AppServer       = require('./AppServer.js');
 
 // Patch console.x methods in order to add timestamp information
@@ -83,12 +82,9 @@ var MainServer = function () {
         self.createRoutes();
         self.app = express();
         self.httpServer = http.Server(self.app);
-
-        // Set up WebSocket Server
-        self.wss = new WebSocketServer({server: self.httpServer});
-
+        
         // The app server contains all the logic and state of the WebSocket app
-        self.appServer = new AppServer(self.wss);
+        self.appServer = new AppServer();
 
         // Set up express static content root
         self.app.use(express.static(__dirname + '/../' + (process.argv[2] || 'client')));

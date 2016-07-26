@@ -1,69 +1,103 @@
 var NODEJS = typeof module !== 'undefined' && module.exports;
 
-var URL = require('url');
+var Client = require('node-rest-client').Client;
 
 /**
  * This module contains all of the app logic and state,
- * @param wss
  * @constructor
  */
-var AppServer = function (wss) {
+var AppServer = function () {
     //  Scope.
     var self = this;
 
-    self.wss = wss;
-    self.wss.broadcast = function broadcast(data) {
-        self.wss.clients.forEach(function each(client) {
-            client.send(data);
-        });
+    self.client = new Client();
+
+    self.nr_api_key = "";
+    self.spio_api_key = "";
+
+    self.nr_args = {
+        headers: { "X-Api-Key": self.nr_api_key } // request headers
     };
 
-    // Example state
-    var updateCount = 0;
+    self.spio_args = {
+        headers: { "Authorization": self.spio_api_key }
+    };
+
+    self.spio_patch_args_down = {
+        data: "component[status]=major_outage",
+        headers: {
+            "Authorization": self.spio_api_key,
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+    };
+
+    self.spio_patch_args_up = {
+        data: "component[status]=operational",
+        headers: {
+            "Authorization": self.spio_api_key,
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+    };
+
+    self.violation_policy_names = {};
 
     setInterval(function() {
-        // send to all clients
-        self.wss.broadcast(JSON.stringify(++updateCount));
-    }, 100);
 
-    self.wss.on('connection', function (ws) {
+        // check for any open violations
+        console.log("Checking for violations");
 
-        console.log('Client connected headers:', JSON.stringify(ws.upgradeReq.headers));
+        self.client.get("https://api.newrelic.com/v2/alerts_violations.json?only_open=true", self.nr_args,
+            function (data, response) {
+                //console.log(data);
+                //
+                //console.log('data is: ');
 
-        // parse query string
-        var queryString = URL.parse(ws.upgradeReq.url, true).query;
+                var violations = data.violations;
 
-        var name = queryString.name;
+                // parsed response body as js object
+                for (var i = 0; i < violations.length; i++) {
+                    var violation = violations[i];
+                    //console.log("policy: " + violation.policy_name);
 
-        console.log("Name:", name);
+                    self.violation_policy_names[violation.policy_name] = 1;
+                }
 
-        self.wss.broadcast(JSON.stringify("Client joined"));
-
-        ws.on('message', function (msg, flags) {
-            if (flags.binary) {
-                var ab = toArrayBuffer(msg);
-                var arr = new Int32Array(ab);
-                console.log(arr[0]);
+                console.log(self.violation_policy_names);
             }
-            else {
-                console.log(msg);
-            }
-        });
+        );
 
-        ws.on('close', function () {
-            self.wss.broadcast(JSON.stringify("Client left"));
-            console.log('Client connection closed');
-        });
+        // now update the statuspage.io component based on any matching policy-components names
+        self.client.get("https://api.statuspage.io/v1/pages/dn6mqn7xvzz3/components.json", self.spio_args,
+            function (data, response) {
+                //console.log(data);
 
-        function toArrayBuffer(buffer) {
-            var ab = new ArrayBuffer(buffer.length);
-            var view = new Uint8Array(ab);
-            for (var i = 0; i < buffer.length; ++i) {
-                view[i] = buffer[i];
+                for (var i = 0; i < data.length; i++) {
+                    var component = data[i];
+
+                    if (self.violation_policy_names[component.name]) {
+                        console.log("Found component matching policy violation");
+
+                        // update status of component
+                        self.client.patch("https://api.statuspage.io/v1/pages/dn6mqn7xvzz3/components/hdlfsfbq84lc.json" , self.spio_patch_args_down,
+                            function (data, response) {
+                                console.log(data);
+                            }
+                        );
+                    }
+                    else {
+                        // update status of component
+                        self.client.patch("https://api.statuspage.io/v1/pages/dn6mqn7xvzz3/components/hdlfsfbq84lc.json" , self.spio_patch_args_up,
+                            function (data, response) {
+                                console.log(data);
+                            }
+                        );
+                    }
+                }
             }
-            return ab;
-        }
-    });
+        );
+
+    }, 3000);
+
 };
 
 if (NODEJS) module.exports = AppServer;
