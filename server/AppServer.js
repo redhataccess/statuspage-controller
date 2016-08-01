@@ -25,7 +25,7 @@ var AppServer = function () {
 
     self.spio_patch_args = {
         headers: {
-            "Authorization": conf.SPIO_API_KEY,
+            "Authorization": "OAuth " + conf.SPIO_API_KEY,
             "Content-Type": "application/x-www-form-urlencoded"
         }
     };
