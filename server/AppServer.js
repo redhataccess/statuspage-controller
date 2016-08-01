@@ -41,12 +41,13 @@ var AppServer = function () {
                 if (data.violations) {
                     var violations = data.violations;
                     self.violation_policy_names = {};
+                    console.log("Violations: ", violations.length);
 
                     if (violations.length > 0) {
                         // parsed response body as js object
                         for (var i = 0; i < violations.length; i++) {
                             var violation = violations[i];
-                            self.violation_policy_names[violation.policy_name] = 1;
+                            self.violation_policy_names[violation.policy_name.toLowerCase()] = 1;
                         }
 
                         console.log("Policies with open violations: ", self.violation_policy_names);
@@ -74,7 +75,7 @@ var AppServer = function () {
                         for (var i = 0; i < data.length; i++) {
                             var component = data[i];
 
-                            if (self.violation_policy_names[component.name]) {
+                            if (self.violation_policy_names[component.name.toLowerCase()]) {
                                 console.log("Found component matching policy violation, name: ", component.name);
 
                                 if (component.status != 'partial_outage') {
