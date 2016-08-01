@@ -1,0 +1,12 @@
+var NODEJS = typeof module !== 'undefined' && module.exports;
+
+var SPC = SPC || {};
+
+SPC.Conf = {
+    NR_API_KEY    : "aaa",  // New Relic API Key
+    SPIO_API_KEY  : "bbb",  // statuspage.io API Key
+    SPIO_PAGE_ID  : "ccc",  // statuspage.io Page ID
+    POLL_INTERVAL : 10000,  // How often to check for violations in ms
+};
+
+if (NODEJS) module.exports = SPC.Conf;

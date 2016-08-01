@@ -1,8 +1,8 @@
 #!/bin/env node
 //  Sample Node.js WebSocket Client-Server application
-var http            = require('http');
-var express         = require('express');
-var AppServer       = require('./AppServer.js');
+var http      = require('http');
+var express   = require('express');
+var AppServer = require('./AppServer.js');
 
 // Patch console.x methods in order to add timestamp information
 require("console-stamp")(console, {pattern: "mm/dd/yyyy HH:MM:ss.l"});
@@ -82,7 +82,7 @@ var MainServer = function () {
         self.createRoutes();
         self.app = express();
         self.httpServer = http.Server(self.app);
-        
+
         // The app server contains all the logic and state of the WebSocket app
         self.appServer = new AppServer();
 
