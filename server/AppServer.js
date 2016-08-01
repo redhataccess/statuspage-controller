@@ -32,10 +32,9 @@ var AppServer = function () {
 
     self.violation_policy_names = {};
 
-    setInterval(function() {
-
+    function main() {
         // check for any open violations
-        console.log("Checking for violations");
+        console.log("Checking for open New Relic violations...");
 
         self.client.get(self.nr_url + "/alerts_violations.json?only_open=true", self.nr_args,
             function (data, response) {
@@ -47,57 +46,72 @@ var AppServer = function () {
                         // parsed response body as js object
                         for (var i = 0; i < violations.length; i++) {
                             var violation = violations[i];
-                            //console.log("policy: " + violation.policy_name);
-
                             self.violation_policy_names[violation.policy_name] = 1;
                         }
 
-                        console.log(self.violation_policy_names);
+                        console.log("Policies with open violations: ", self.violation_policy_names);
                     }
                     else {
-                        console.log("No violations");
+                        console.log("No open violations.");
                     }
+
+                    // Now update SPIO components based on open violations
+                    updateSPIOComponents();
                 }
                 else {
-                    console.log("No violations in response");
+                    console.log("Invalid response from New Relic API. Status Code: " + response.statusCode);
                 }
             }
         );
 
-        // now update the statuspage.io component based on any matching policy-components names
-        self.client.get(self.spio_url + "/components.json", self.spio_get_args,
-            function (data, response) {
-                //console.log(data);
+        function updateSPIOComponents() {
+            console.log("Updating statuspage.io components...");
 
-                for (var i = 0; i < data.length; i++) {
-                    var component = data[i];
+            // now update the statuspage.io component based on any matching policy-components names
+            self.client.get(self.spio_url + "/components.json", self.spio_get_args,
+                function (data, response) {
+                    if (response.statusCode === 200) {
+                        for (var i = 0; i < data.length; i++) {
+                            var component = data[i];
 
-                    if (self.violation_policy_names[component.name]) {
-                        console.log("Found component matching policy violation");
+                            if (self.violation_policy_names[component.name]) {
+                                console.log("Found component matching policy violation, name: ", component.name);
 
-                        // update status of component
-                        self.spio_patch_args.data = "component[status]=major_outage";
-                        self.client.patch(self.spio_url + "/components/" + component.id + ".json", self.spio_patch_args,
-                            function (data, response) {
-                                //console.log(data);
+                                if (component.status != 'partial_outage') {
+                                    // update status of component based on violation rules
+                                    updateSPIOComponentStatus(component, 'partial_outage');
+                                }
                             }
-                        );
+                            else if (component.status != 'operational') {
+                                // No violation for this component so set it back to operational
+                                updateSPIOComponentStatus(component, 'operational');
+                            }
+                        }
                     }
                     else {
-                        // update status of component
-                        self.spio_patch_args.data = "component[status]=operational";
-                        self.client.patch(self.spio_url + "/components/" + component.id + ".json", self.spio_patch_args,
-                            function (data, response) {
-                                //console.log(data);
-                            }
-                        );
+                        console.log("Invalid response from statuspage.io API. Status code: " + response.statusCode);
                     }
                 }
-            }
-        );
+            );
+        }
 
-    }, conf.POLL_INTERVAL);
+        function updateSPIOComponentStatus(component, status) {
+            console.log("Setting components status: ", component.name, status);
+            self.spio_patch_args.data = "component[status]=" + status;
+            self.client.patch(self.spio_url + "/components/" + component.id + ".json", self.spio_patch_args,
+                function (data, response) {
+                    if (response.statusCode === 200) {
+                        console.log("Status updated successfully for component: ", component.name);
+                    }
+                    else {
+                        console.log("Error updating status for component: ", component.name, response.statusCode);
+                    }
+                }
+            );
+        }
+    }
 
+    setInterval(main, conf.POLL_INTERVAL);
 };
 
 if (NODEJS) module.exports = AppServer;
