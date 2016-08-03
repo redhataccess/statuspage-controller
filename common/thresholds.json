@@ -1,0 +1,14 @@
+[
+  {
+    "duration": 300,
+    "status": "degraded_performance"
+  },
+  {
+    "duration": 600,
+    "status": "partial_outage"
+  },
+  {
+    "duration": 900,
+    "status": "major_outage"
+  }
+]
