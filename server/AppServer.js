@@ -90,7 +90,7 @@ var AppServer = function () {
         );
 
         function updateSPIOComponents() {
-            console.log("Updating statuspage.io components...");
+            console.log("Synchronizing statuspage.io components...");
 
             // now update the statuspage.io component based on any matching policy-components names
             self.client.get(self.spio_url + "/components.json", self.spio_get_args,
