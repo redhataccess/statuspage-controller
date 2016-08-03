@@ -1,3 +1,8 @@
+////////////////////////////////////////////////////////////////////
+// rename this file to private_conf.js and set your keys and id here
+// WARNING: Keep this file private and secure!
+////////////////////////////////////////////////////////////////////
+
 var NODEJS = typeof module !== 'undefined' && module.exports;
 
 var SPC = SPC || {};
