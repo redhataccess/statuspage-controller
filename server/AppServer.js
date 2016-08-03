@@ -33,6 +33,7 @@ var AppServer = function () {
     self.oldest_violation_per_policy = {};
 
     function getStatus(duration) {
+        //TODO: use thresholds.json here instead of hard code
         if (duration > 75) return 'major_outage';
         if (duration > 50) return 'partial_outage';
         if (duration > 25) return 'degraded_performance';
