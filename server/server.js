@@ -116,7 +116,7 @@ var MainServer = function () {
     self.start = function () {
         //  Start the app on the specific interface (and port).
         self.httpServer.listen(self.port, function () {
-            console.log('Node server started on localhost:%d ...', self.port);
+            console.log('Node server started on http://localhost:%d ...', self.port);
         });
     };
 };
