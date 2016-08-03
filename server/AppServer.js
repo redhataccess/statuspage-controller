@@ -32,7 +32,7 @@ var AppServer = function () {
 
     self.oldest_violation_per_policy = {};
 
-    function getStatusBasedRules(duration) {
+    function getStatus(duration) {
         if (duration > 75) return 'major_outage';
         if (duration > 50) return 'partial_outage';
         if (duration > 25) return 'degraded_performance';
@@ -103,7 +103,7 @@ var AppServer = function () {
                                 console.log("Found component matching policy violation, name: ", component.name);
                                 console.log("Violation duration, component status: ", oldest_violation.duration, component.status);
 
-                                var new_status = getStatusBasedRules(oldest_violation.duration);
+                                var new_status = getStatus(oldest_violation.duration);
 
                                 if (component.status != new_status) {
                                     // update status of component based on violation rules
