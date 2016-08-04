@@ -2,6 +2,7 @@ var NODEJS = typeof module !== 'undefined' && module.exports;
 
 var Client = require('node-rest-client').Client;
 var conf   = require('./private_conf.js');
+var rules  = require('./thresholds.json');
 
 /**
  * This module contains all of the app logic and state,
@@ -33,13 +34,14 @@ var AppServer = function () {
     self.oldest_violation_per_policy = {};
 
     function getStatus(duration) {
-        //TODO: use thresholds.json here instead of hard code
-        if (duration > 75) return 'major_outage';
-        if (duration > 50) return 'partial_outage';
-        if (duration > 25) return 'degraded_performance';
-
+        var rule = {};
+        for (var i = 0, l = rules.length; i < l; ++i) {
+            if (duration > rules[i].duration && rule ? duration > rule.duration : true) {
+                rule = rules[i];
+            }
+        }
         // default to operational
-        return 'operational';
+        return rule.status || 'operational';
     }
 
     function main() {
