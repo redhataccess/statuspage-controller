@@ -1,3 +1,4 @@
 node_modules
 .idea
 private_conf.js
+bower_components
