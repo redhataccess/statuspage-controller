@@ -2,7 +2,7 @@ var NODEJS = typeof module !== 'undefined' && module.exports;
 
 var Client = require('node-rest-client').Client;
 var conf   = require('./private_conf.js');
-var rules  = require('./thresholds.json');
+var _      = require('lodash');
 
 /**
  * This module contains all of the app logic and state,
@@ -34,12 +34,16 @@ var AppServer = function () {
     self.oldest_violation_per_policy = {};
 
     function getStatus(duration) {
+        var rules = _.orderBy(require('./thresholds.json'), 'duration', 'desc');
+
         var rule = {};
         for (var i = 0, l = rules.length; i < l; ++i) {
-            if (duration > rules[i].duration && rule ? duration > rule.duration : true) {
+            if (duration > rules[i].duration) {
                 rule = rules[i];
+                break;
             }
         }
+
         // default to operational
         return rule.status || 'operational';
     }
@@ -100,6 +104,8 @@ var AppServer = function () {
                     if (response.statusCode === 200) {
                         for (var i = 0; i < data.length; i++) {
                             var component = data[i];
+
+                            //console.log("Component: ", component);
 
                             var oldest_violation = self.oldest_violation_per_policy[component.name.toLowerCase()];
                             if (oldest_violation) {
