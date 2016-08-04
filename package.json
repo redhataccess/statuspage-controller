@@ -20,11 +20,14 @@
     "console-stamp": "~0.2.0",
     "node-rest-client": "~2.0.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "vulcanize": "^1.14.8"
+  },
   "bundleDependencies": [],
   "private": false,
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js"
+    "start": "node server/server.js",
+    "build-client": "cp -r client dist && node node_modules/.bin/vulcanize client/index.html -o dist/index.html"
   }
 }

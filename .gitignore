@@ -3,3 +3,4 @@ node_modules
 private_conf.js
 bower_components
 npm-debug.log
+dist

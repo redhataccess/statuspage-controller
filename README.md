@@ -8,3 +8,9 @@ Automates the setting of statuspage.io component statuses based on New Relic ale
 Both New Relic and StatusPage.io have ways to automate via push.  New Relic alerts can post to a webhook, or send an email, and StatusPage.io components can be updated with a unique email.  The problem with this method is that if a message is ever lost, then the state between New Relic and StatusPage.io will get out of sync.
 
 By synchronizing both systems with their APIs, the states between the two will always be kept in sync, even if an alert message is never received.  It also updates states faster than email.  As soon as a violation is created it will be picked up on the next sync.  If Status Controller ever goes down, the next time it is started it will sync the statuses to their current state.
+
+## Building the client view
+
+    npm run build-client
+
+That will create a `dist` directory, ready to be served.
