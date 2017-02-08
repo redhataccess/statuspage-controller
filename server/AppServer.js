@@ -8,9 +8,30 @@ var _      = require('lodash');
  * This module contains all of the app logic and state,
  * @constructor
  */
-var AppServer = function () {
+var AppServer = function (app) {
     //  Scope.
     var self = this;
+    self.app = app;
+
+
+    // Define API
+    self.routes = {};
+    self.routes['/api/healthcheck'] = function (req, res) {
+        // Make sure we can communicate with New Relic api
+        
+
+        // Make sure we can communicate with statuspage.io api
+
+        res.setHeader('Content-Type', 'application/json');
+        res.send("{}");
+    };
+
+    //  Add handlers for the app (from the routes).
+    for (var r in self.routes) {
+        if (self.routes.hasOwnProperty(r)) {
+            self.app.get(r, self.routes[r]);
+        }
+    }
 
     self.client = new Client();
     self.nr_url = "https://api.newrelic.com/v2";
