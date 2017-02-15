@@ -1,0 +1,19 @@
+# OpenShift 3 Environment variables for running in an OpenShift container
+# Depends on "spc-secret" secret resource being created with the values for the keys
+# See: https://docs.openshift.com/container-platform/3.4/dev_guide/secrets.html
+env:
+  - name: NR_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: spc-secret
+        key: nr_api_key
+  - name: SPIO_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: spc-secret
+        key: spio_api_key
+  - name: SPIO_PAGE_ID
+    valueFrom:
+      secretKeyRef:
+        name: spc-secret
+        key: spio_page_id
