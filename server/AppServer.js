@@ -130,7 +130,7 @@ var AppServer = function (app) {
 
                             var oldest_violation = self.oldest_violation_per_policy[component.name.toLowerCase()];
                             if (oldest_violation) {
-                                console.log("Found component matching policy violation, name: ", component.name);
+                                console.log("Found component matching policy name: ", component.name);
                                 console.log("Violation duration, component status: ", oldest_violation.duration, component.status);
 
                                 var new_status = getStatus(oldest_violation.duration);
