@@ -25,7 +25,8 @@ var MainServer = function () {
      */
     self.setupVariables = function () {
         //  Set the environment variables we need.
-        self.port = process.env.PORT || 3000;
+        self.port = process.env.PORT || 8080;
+        console.log("Port: ", self.port);
     };
 
 
