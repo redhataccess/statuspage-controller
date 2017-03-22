@@ -14,7 +14,7 @@ var NODEJS = typeof module !== 'undefined' && module.exports;
 var SPC = SPC || {};
 
 SPC.Conf = {
-    POLL_INTERVAL : 10000  // How often to check for violations in ms
+    POLL_INTERVAL : 30000  // How often to check for violations in ms
 };
 
 if (NODEJS) module.exports = SPC.Conf;
