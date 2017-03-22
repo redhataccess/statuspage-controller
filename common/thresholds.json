@@ -1,14 +1,14 @@
 [
   {
-    "duration": 600,
+    "duration": 20,
     "status": "degraded_performance"
   },
   {
-    "duration": 1200,
+    "duration": 35,
     "status": "partial_outage"
   },
   {
-    "duration": 1800,
+    "duration": 45,
     "status": "major_outage"
   }
 ]
