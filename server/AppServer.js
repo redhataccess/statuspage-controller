@@ -76,49 +76,61 @@ var AppServer = function (app) {
     function main() {
         // check for any open violations
         console.log("Checking for open New Relic violations...");
+        var currentPage = 1;
 
-        self.client.get(self.nr_url + "/alerts_violations.json?only_open=true", self.nr_args,
-            function (data, response) {
-                if (data.violations) {
-                    var violations = data.violations;
-                    self.oldest_violation_per_policy = {};
-                    console.log("Violations total: ", violations.length);
+        // reset policies
+        self.oldest_violation_per_policy = {};
 
-                    if (violations.length > 0) {
-                        // parsed response body as js object
-                        for (var i = 0; i < violations.length; i++) {
-                            var violation = violations[i];
-                            //console.log("violation: ", violation);
-                            var policy_name = violation.policy_name.toLowerCase();
+        self.client.get(self.nr_url + "/alerts_violations.json?only_open=true&page=" + currentPage, self.nr_args,
+            parseViolations
+        );
 
-                            // Save the oldest violation for this policy
-                            if (self.oldest_violation_per_policy[policy_name]) {
-                                var oldest = self.oldest_violation_per_policy[policy_name];
-                                //console.log("checking if this violation is older: ", violation.duration, oldest.duration);
-                                if (violation.duration > oldest.duration) {
-                                    //console.log("Setting to oldest: ", violation);
-                                    self.oldest_violation_per_policy[policy_name] = violation;
-                                }
-                            }
-                            else {
+        function parseViolations(data, response) {
+            console.log("Current page: ", currentPage);
+
+            if (data.violations) {
+                var violations = data.violations;
+                console.log("Violations total: ", violations.length);
+
+                if (violations.length > 0) {
+                    // parsed response body as js object
+                    for (var i = 0; i < violations.length; i++) {
+                        var violation = violations[i];
+                        //console.log("violation: ", violation);
+                        var policy_name = violation.policy_name.toLowerCase();
+
+                        // Save the oldest violation for this policy
+                        if (self.oldest_violation_per_policy[policy_name]) {
+                            var oldest = self.oldest_violation_per_policy[policy_name];
+                            //console.log("checking if this violation is older: ", violation.duration, oldest.duration);
+                            if (violation.duration > oldest.duration) {
+                                //console.log("Setting to oldest: ", violation);
                                 self.oldest_violation_per_policy[policy_name] = violation;
                             }
                         }
-
-                        console.log("Policies with open violations: ", Object.getOwnPropertyNames(self.oldest_violation_per_policy));
-                    }
-                    else {
-                        console.log("No open violations.");
+                        else {
+                            self.oldest_violation_per_policy[policy_name] = violation;
+                        }
                     }
 
+                    console.log("Policies with open violations: ", Object.getOwnPropertyNames(self.oldest_violation_per_policy));
+
+                    // recursively get and parse the next page
+                    currentPage++;
+                    self.client.get(self.nr_url + "/alerts_violations.json?only_open=true&page=" + currentPage, self.nr_args,
+                        parseViolations
+                    );
+                }
+                else {
+                    console.log("No open violations.");
                     // Now update SPIO components based on open violations
                     updateSPIOComponents();
                 }
-                else {
-                    console.log("Invalid response from New Relic API. Status Code: " + response.statusCode);
-                }
             }
-        );
+            else {
+                console.log("Invalid response from New Relic API. Status Code: " + response.statusCode);
+            }
+        }
 
         function updateSPIOComponents() {
             console.log("Synchronizing statuspage.io components...");
@@ -146,7 +158,7 @@ var AppServer = function (app) {
                             }
                             else if (component.status != 'operational') {
                                 // No violation for this component so set it back to operational
-                                //updateSPIOComponentStatus(component, 'operational');
+                                updateSPIOComponentStatus(component, 'operational');
                             }
                         }
                     }
