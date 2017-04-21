@@ -33,6 +33,10 @@ var AppServer = function (app) {
         }
     }
 
+    console.log("nr api key: ", process.env.NR_API_KEY);
+    console.log("sp page id: ", process.env.SPIO_PAGE_ID);
+    console.log("sp api key: ", process.env.SPIO_API_KEY);
+
     self.client = new Client();
     self.nr_url = "https://api.newrelic.com/v2";
     self.spio_url = "https://api.statuspage.io/v1/pages/" + process.env.SPIO_PAGE_ID;
@@ -78,7 +82,7 @@ var AppServer = function (app) {
                 if (data.violations) {
                     var violations = data.violations;
                     self.oldest_violation_per_policy = {};
-                    console.log("Violations: ", violations.length);
+                    console.log("Violations total: ", violations.length);
 
                     if (violations.length > 0) {
                         // parsed response body as js object
@@ -142,7 +146,7 @@ var AppServer = function (app) {
                             }
                             else if (component.status != 'operational') {
                                 // No violation for this component so set it back to operational
-                                updateSPIOComponentStatus(component, 'operational');
+                                //updateSPIOComponentStatus(component, 'operational');
                             }
                         }
                     }
