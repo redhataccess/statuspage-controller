@@ -1,28 +1,36 @@
 {
   "name": "statuspage-controller",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Automates the setting of statuspage.io component statuses based on New Relic alerts.",
   "keywords": [
     "Node.js",
-    "application"
+    "application",
+    "statuspage",
+    "statuspage.io",
+    "new relic",
+    "newrelic",
+    "sre",
+    "site reliability",
+    "status",
+    "monitoring"
   ],
   "author": {
     "name": "Jared Sprague",
-    "email": "jsprague@redhat.com",
-    "url": "https://github.com/Jared-Sprague"
+    "email": "jared@jaredsprague.com",
+    "url": "http://jaredsprague.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Jared-Sprague/statuspage-controller"
+    "url": "https://github.com/redhataccess/statuspage-controller"
   },
   "dependencies": {
-    "express": "^4.13.4",
-    "console-stamp": "~0.2.0",
-    "node-rest-client": "~2.0.1",
-    "lodash": "~4.14.1"
+    "console-stamp": "~0.2.5",
+    "express": "^4.15.3",
+    "lodash": "~4.17.4",
+    "node-rest-client": "~3.1.0"
   },
   "devDependencies": {
-    "vulcanize": "^1.14.8"
+    "vulcanize": "^1.15.4"
   },
   "bundleDependencies": [],
   "private": false,
