@@ -298,7 +298,7 @@ var StatuspageController = function (config) {
 
     self.maskString = function (s) {
         return s ? '***' + s.substr(s.length - 4) : 'undefined';
-    }
+    };
 
 
     // Initialize all variables and server
