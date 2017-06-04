@@ -85,6 +85,13 @@ var AppServer = function (app) {
             parseViolations
         );
 
+        /**
+         * Recursively pages through New Relic violations and parses them, then hands off to updateSPIOComponents
+         * @param data
+         * @param data.violations
+         * @param data.violations.policy_name
+         * @param response
+         */
         function parseViolations(data, response) {
             console.log("Current page: ", currentPage);
 
