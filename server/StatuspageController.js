@@ -1,64 +1,43 @@
-var NODEJS = typeof module !== 'undefined' && module.exports;
-
 var Client = require('node-rest-client').Client;
-var conf = require('./conf.js');
 var _ = require('lodash');
+var http = require('http');
+var express = require('express');
+
+// Patch console.x methods in order to add timestamp information
+require("console-stamp")(console, {pattern: "mm/dd/yyyy HH:MM:ss.l"});
 
 /**
- * This module contains all of the app logic and state,
+ * Statuspage Controller automates actions on a statuspage.io status page based on New Relic Alerts
+ *
+ * NOTE: If you don't provide api keys will attempt to sue these environment variables:
+ *    NR_API_KEY    // New Relic API Key
+ *    SPIO_API_KEY  // statuspage.io API Key
+ *    SPIO_PAGE_ID  // statuspage.io Page ID
+ *
  * @constructor
+ *
  */
-var AppServer = function (app) {
+var StatuspageController = function (config) {
+
+    config = config || {};
+
     //  Scope.
     var self = this;
-    self.app = app;
 
-
-    // Define API
-    self.routes = {};
-    self.routes['/api/healthcheck'] = function (req, res) {
-        // Make sure we can communicate with New Relic api
-
-
-        // Make sure we can communicate with statuspage.io api
-
-        res.setHeader('Content-Type', 'application/json');
-        res.send("{}");
+    /**
+     * Configuration settings.
+     * @type {{}}
+     */
+    this.config = {
+        POLL_INTERVAL: process.env.POLL_INTERVAL || config.POLL_INTERVAL || 30000,
+        PORT:          process.env.PORT          || config.PORT          || 8080,
+        NR_API_KEY:    process.env.NR_API_KEY    || config.NR_API_KEY,
+        SPIO_PAGE_ID:  process.env.SPIO_PAGE_ID  || config.SPIO_PAGE_ID,
+        SPIO_API_KEY:  process.env.SPIO_API_KEY  || config.SPIO_API_KEY,
     };
-
-    //  Add handlers for the app (from the routes).
-    for (var r in self.routes) {
-        if (self.routes.hasOwnProperty(r)) {
-            self.app.get(r, self.routes[r]);
-        }
-    }
-
-    console.log("nr api key: ", process.env.NR_API_KEY);
-    console.log("sp page id: ", process.env.SPIO_PAGE_ID);
-    console.log("sp api key: ", process.env.SPIO_API_KEY);
-
-    self.client = new Client();
-    self.nr_url = "https://api.newrelic.com/v2";
-    self.spio_url = "https://api.statuspage.io/v1/pages/" + process.env.SPIO_PAGE_ID;
-
-    self.nr_args = {
-        headers: {"X-Api-Key": process.env.NR_API_KEY} // request headers
-    };
-
-    self.spio_get_args = {
-        headers: {"Authorization": "OAuth " + process.env.SPIO_API_KEY}
-    };
-
-    self.spio_patch_args = {
-        headers: {
-            "Authorization": "OAuth " + process.env.SPIO_API_KEY,
-            "Content-Type": "application/x-www-form-urlencoded"
-        }
-    };
-
-    self.oldest_violation_per_policy = {};
 
     function getStatus(duration) {
+        //TODO: don't read thresholds.json every time, load it and cache it
         var rules = _.orderBy(require('./thresholds.json'), 'duration', 'desc');
 
         var rule = {};
@@ -192,7 +171,138 @@ var AppServer = function (app) {
         }
     }
 
-    setInterval(main, conf.POLL_INTERVAL);
+    /**
+     *  terminator === the termination handler
+     *  Terminate server on receipt of the specified signal.
+     */
+    self.terminator = function (sig) {
+        if (typeof sig === "string") {
+            console.log('Received %s - terminating sample server ...', sig);
+            process.exit(1);
+        }
+        console.log('Node server stopped.');
+    };
+
+
+    /**
+     *  Setup termination handlers (for exit and a list of signals).
+     */
+    self.setupTerminationHandlers = function () {
+        //  Process on exit and signals.
+        process.on('exit', function () {
+            self.terminator(0);
+        });
+
+        ['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT',
+            'SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM'
+        ].forEach(function (element) {
+            process.on(element, function () {
+                self.terminator(element);
+            });
+        });
+    };
+
+
+    self.initializeVariables = function () {
+        self.client = new Client();
+        self.nr_url = "https://api.newrelic.com/v2";
+        self.spio_url = "https://api.statuspage.io/v1/pages/" + self.config.SPIO_PAGE_ID;
+
+        self.nr_args = {
+            headers: {"X-Api-Key": self.config.NR_API_KEY} // request headers
+        };
+
+        self.spio_get_args = {
+            headers: {"Authorization": "OAuth " + self.config.SPIO_API_KEY}
+        };
+
+        self.spio_patch_args = {
+            headers: {
+                "Authorization": "OAuth " + self.config.SPIO_API_KEY,
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        };
+
+        self.oldest_violation_per_policy = {};
+    };
+
+    /**
+     *  Initialize the server (express) and create the routes and register
+     *  the handlers.
+     */
+    self.initializeServer = function () {
+        self.app = express();
+        self.httpServer = http.Server(self.app);
+
+        // Set up express static content root
+        self.app.use(express.static(__dirname + '/../' + (process.argv[2] || 'client')));
+
+        // Define Routes
+        self.routes = {};
+        self.routes['/api/healthcheck'] = function (req, res) {
+            //TODO: Make sure we can communicate with New Relic api
+            //TODO: Make sure we can communicate with statuspage.io api
+            res.setHeader('Content-Type', 'application/json');
+            res.send("{}");
+        };
+
+        //  Add handlers for the app (from the routes).
+        for (var r in self.routes) {
+            if (self.routes.hasOwnProperty(r)) {
+                self.app.get(r, self.routes[r]);
+            }
+        }
+    };
+
+
+    /**
+     *  Initializes the server
+     */
+    self.initialize = function () {
+        self.initializeVariables();
+
+        self.setupTerminationHandlers();
+
+        // Create the express server and routes.
+        self.initializeServer();
+    };
+
+
+    /**
+     *  Start the server
+     */
+    self.start = function () {
+        if (!self.config.NR_API_KEY || !self.config.SPIO_PAGE_ID || !self.config.SPIO_API_KEY) {
+            console.error("You are missing required API keys, make sure the following environment variables are set:");
+            console.error("NR_API_KEY - Your New Relic API key");
+            console.error("SPIO_PAGE_ID - Your Statuspage.io Page ID");
+            console.error("SPIO_API_KEY - Your Statuspage.io API key");
+            return;
+        }
+
+        console.log("Starting StatuspageController with the following config:");
+        console.log("poll interval: ", self.config.POLL_INTERVAL);
+        console.log("Port: ", self.config.PORT);
+        console.log("New Relic API key: ", self.maskString(self.config.NR_API_KEY));
+        console.log("StatusPage Page ID: ", self.maskString(self.config.SPIO_PAGE_ID));
+        console.log("StatusPage API key: ", self.maskString(self.config.SPIO_API_KEY));
+
+        // Start synchronizing
+        setInterval(main, self.config.POLL_INTERVAL);
+
+        //  Start the app on the specific interface (and port).
+        self.httpServer.listen(self.config.PORT, function () {
+            console.log('Node server started on http://localhost:%d ...', self.config.PORT);
+        });
+    };
+
+    self.maskString = function (s) {
+        return s ? '***' + s.substr(s.length - 4) : 'undefined';
+    }
+
+
+    // Initialize all variables and server
+    self.initialize();
 };
 
-if (NODEJS) module.exports = AppServer;
+module.exports = StatuspageController;

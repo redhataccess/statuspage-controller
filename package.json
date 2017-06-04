@@ -36,7 +36,7 @@
   "private": false,
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js",
+    "start": "node server/StatuspageController.js",
     "build-client": "cp -r client dist && node node_modules/.bin/vulcanize client/index.html -o dist/index.html"
   }
 }
