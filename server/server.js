@@ -1,7 +1,7 @@
 #!/bin/env node
 //  Sample Node.js WebSocket Client-Server application
-var http      = require('http');
-var express   = require('express');
+var http = require('http');
+var express = require('express');
 var AppServer = require('./AppServer.js');
 
 // Patch console.x methods in order to add timestamp information
@@ -48,12 +48,16 @@ var MainServer = function () {
      */
     self.setupTerminationHandlers = function () {
         //  Process on exit and signals.
-        process.on('exit', function() { self.terminator(0); });
+        process.on('exit', function () {
+            self.terminator(0);
+        });
 
         ['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT',
-         'SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM'
-        ].forEach(function(element) {
-            process.on(element, function() { self.terminator(element); });
+            'SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM'
+        ].forEach(function (element) {
+            process.on(element, function () {
+                self.terminator(element);
+            });
         });
     };
 

@@ -1,8 +1,8 @@
 var NODEJS = typeof module !== 'undefined' && module.exports;
 
 var Client = require('node-rest-client').Client;
-var conf   = require('./conf.js');
-var _      = require('lodash');
+var conf = require('./conf.js');
+var _ = require('lodash');
 
 /**
  * This module contains all of the app logic and state,
@@ -42,11 +42,11 @@ var AppServer = function (app) {
     self.spio_url = "https://api.statuspage.io/v1/pages/" + process.env.SPIO_PAGE_ID;
 
     self.nr_args = {
-        headers: { "X-Api-Key": process.env.NR_API_KEY } // request headers
+        headers: {"X-Api-Key": process.env.NR_API_KEY} // request headers
     };
 
     self.spio_get_args = {
-        headers: { "Authorization": "OAuth " + process.env.SPIO_API_KEY }
+        headers: {"Authorization": "OAuth " + process.env.SPIO_API_KEY}
     };
 
     self.spio_patch_args = {
