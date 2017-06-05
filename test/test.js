@@ -7,6 +7,20 @@ var config = {
     SPIO_API_KEY: 'spioapi',
     POLL_INTERVAL: 3000,
     PORT: 3000,
+    THRESHOLDS: [
+        {
+            "duration": 600,
+            "status": "degraded_performance"
+        },
+        {
+            "duration": 1200,
+            "status": "partial_outage"
+        },
+        {
+            "duration": 1800,
+            "status": "major_outage"
+        }
+    ]
 };
 
 var plugin_config = {

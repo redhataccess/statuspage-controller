@@ -34,11 +34,24 @@ var StatuspageController = function (config) {
         NR_API_KEY:    process.env.NR_API_KEY    || config.NR_API_KEY,
         SPIO_PAGE_ID:  process.env.SPIO_PAGE_ID  || config.SPIO_PAGE_ID,
         SPIO_API_KEY:  process.env.SPIO_API_KEY  || config.SPIO_API_KEY,
+        THRESHOLDS:    config.THRESHOLDS || [
+            {
+                "duration": 600,
+                "status": "degraded_performance"
+            },
+            {
+                "duration": 1200,
+                "status": "partial_outage"
+            },
+            {
+                "duration": 1800,
+                "status": "major_outage"
+            }
+        ]
     };
 
     function getStatus(duration) {
-        //TODO: don't read thresholds.json every time, load it and cache it
-        var rules = _.orderBy(require('./thresholds.json'), 'duration', 'desc');
+        var rules = _.orderBy(self.config.THRESHOLDS, 'duration', 'desc');
 
         var rule = {};
         for (var i = 0, l = rules.length; i < l; ++i) {
