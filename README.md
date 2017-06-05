@@ -19,7 +19,7 @@ NOTE: the above can be configured, see below.
 
 ## Usage
 
-With the default config
+### With the default config
 
     var StatuspageController = require('statuspage-controller')
     var spc = new StatuspageController();
@@ -30,7 +30,7 @@ This usage will use all config defaults and expect the following environment var
 * SPIO_PAGE_ID - Your Statuspage.io Page ID
 * SPIO_API_KEY - Your Statuspage.io API key
 
-You can also specify a config object:
+### Specify a config object:
 
     var StatuspageController = require('statuspage-controller')
     var config = {
@@ -43,7 +43,7 @@ You can also specify a config object:
     var spc = new StatuspageController(config);
     spc.start();
     
-Configuring with custom thresholds:
+### Configuring with custom thresholds:
 
     var config = {
         POLL_INTERVAL: 10000,
