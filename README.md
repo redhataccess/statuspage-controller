@@ -5,13 +5,13 @@ It will change the status of status page components if the component names match
 
 For Example, if you have a New Relic alert policy named "Downloads" and a Statuspage.io component named "Downloads",
 If a New Relic incident is created for the "Downloads" policy, status page controller will update the matching
-"Downloads" component in Statuspage.io based on the following thresholds:
+"Downloads" component in Statuspage.io based on the following default thresholds:
 
 1. yellow = Incident is at least 10 minutes old
 2. orange = Incident is at least 20 minutes old
 3. red = incident is 30+ minutes old
 
-NOTE: I'm Working on making the above thresholds configurable
+NOTE: the above can be configured, see below.
 
 ## Install
 
@@ -30,7 +30,7 @@ This usage will use all config defaults and expect the following environment var
 * SPIO_PAGE_ID - Your Statuspage.io Page ID
 * SPIO_API_KEY - Your Statuspage.io API key
 
-You can also specify a config object
+You can also specify a config object:
 
     var StatuspageController = require('statuspage-controller')
     var config = {
@@ -42,6 +42,43 @@ You can also specify a config object
     };
     var spc = new StatuspageController(config);
     spc.start();
+    
+Configuring with custom thresholds:
+
+    var config = {
+        POLL_INTERVAL: 10000,
+        PORT: 8080,
+        NR_API_KEY: process.env.NR_API_KEY,
+        SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
+        SPIO_API_KEY: process.env.SPIO_API_KEY,
+        THRESHOLDS: [
+            {
+                "duration": 600,
+                "status": "degraded_performance"
+            },
+            {
+                "duration": 1200,
+                "status": "partial_outage"
+            },
+            {
+                "duration": 1800,
+                "status": "major_outage"
+            }
+        ]
+    };
+    var spc = new StatuspageController(config);
+    spc.start();
+
+Thresholds are in seconds.  The above will change the component to degraded_performance after 600 seconds, and so on.
+You can have just one threshold if you want to change the component status to a single status after a given time. 
+For example, if you wanted to go strait to major outage after 10 minutes then you would do:
+
+    THRESHOLDS: [
+        {
+            "duration": 600,
+            "status": "major_outage"
+        }
+    ]
 
 ## Basic Design
 ![statuspagecontrolerdesign](https://cloud.githubusercontent.com/assets/3926730/17302336/c955254c-57e9-11e6-8ed9-af3062e0cd07.png)
