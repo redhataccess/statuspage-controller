@@ -1,5 +1,5 @@
 var spc = require('./../server/StatuspageController.js');
-var logPlugin = require('./test_plugin.js');
+var IrcPlugin = require('./test_plugin.js');
 
 var config = {
     NR_API_KEY: 'nrapi',
@@ -9,7 +9,15 @@ var config = {
     PORT: 3000,
 };
 
-var p = new logPlugin();
+var plugin_config = {
+    host: 'irc.host.com',
+    nick: 'statusbot',
+    channels: [
+        '#mychannel'
+    ]
+};
+
+var p = new IrcPlugin(plugin_config);
 
 var spcInstance = new spc(config);
 
