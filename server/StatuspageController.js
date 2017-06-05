@@ -138,11 +138,15 @@ var StatuspageController = function (config) {
                                 var new_status = getStatus(oldest_violation.duration);
 
                                 if (component.status != new_status) {
+                                    self.executePluginsStatusChange(component, new_status, oldest_violation);
+
                                     // update status of component based on violation rules
                                     updateSPIOComponentStatus(component, new_status);
                                 }
                             }
                             else if (component.status != 'operational') {
+                                self.executePluginsStatusChange(component, 'operational');
+
                                 // No violation for this component so set it back to operational
                                 updateSPIOComponentStatus(component, 'operational');
                             }
@@ -164,12 +168,28 @@ var StatuspageController = function (config) {
                         console.log("Status updated successfully for component: ", component.name, status);
                     }
                     else {
-                        console.log("Error updating status for component: ", component.name, status, response.statusCode);
+                        console.error("Error updating status for component: ", component.name, status, response.statusCode);
                     }
                 }
             );
         }
     }
+
+    /**
+     * Execute all plugin status change functions
+     * @param component Status page component being updated
+     * @param status new status
+     * @param violation New Relic violation object
+     */
+    self.executePluginsStatusChange = function (component, status, violation) {
+        self._plugins.forEach(function (plugin) {
+
+            /** @namespace plugin.hookStatusChange */
+            if (plugin && typeof plugin.hookStatusChange === "function") {
+                plugin.hookStatusChange(component, status, violation);
+           }
+        });
+    };
 
     /**
      *  terminator === the termination handler
@@ -202,6 +222,10 @@ var StatuspageController = function (config) {
         });
     };
 
+    self.addPlugin = function (plugin) {
+        self._plugins.push(plugin);
+    };
+
 
     self.initializeVariables = function () {
         self.client = new Client();
@@ -224,6 +248,8 @@ var StatuspageController = function (config) {
         };
 
         self.oldest_violation_per_policy = {};
+
+        self._plugins = [];
     };
 
     /**
