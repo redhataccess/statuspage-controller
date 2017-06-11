@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "console-stamp": "~0.2.5",
-    "express": "^4.15.3",
+    "hapi": "^16.4.3",
     "lodash": "~4.17.4",
     "node-rest-client": "~3.1.0"
   },

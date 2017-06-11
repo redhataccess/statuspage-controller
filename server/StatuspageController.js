@@ -1,7 +1,9 @@
+'use strict';
+
 var Client = require('node-rest-client').Client;
 var _ = require('lodash');
-var http = require('http');
-var express = require('express');
+const Hapi = require('hapi');
+
 
 // Patch console.x methods in order to add timestamp information
 require("console-stamp")(console, {pattern: "mm/dd/yyyy HH:MM:ss.l"});
@@ -270,27 +272,26 @@ var StatuspageController = function (config) {
      *  the handlers.
      */
     self.initializeServer = function () {
-        self.app = express();
-        self.httpServer = http.Server(self.app);
+        // Create a server with a host and port
+        self.server = new Hapi.Server();
+        self.server.connection({
+            host: 'localhost',
+            port: self.config.PORT,
+        });
 
-        // Set up express static content root
-        self.app.use(express.static(__dirname + '/../' + (process.argv[2] || 'client')));
-
-        // Define Routes
-        self.routes = {};
-        self.routes['/api/healthcheck'] = function (req, res) {
-            //TODO: Make sure we can communicate with New Relic api
-            //TODO: Make sure we can communicate with statuspage.io api
-            res.setHeader('Content-Type', 'application/json');
-            res.send("{}");
+        // Add the route
+        const handler = function routeHandler (request, reply) {
+            let response = reply('{}');
+            response.type('application/json');
         };
 
-        //  Add handlers for the app (from the routes).
-        for (var r in self.routes) {
-            if (self.routes.hasOwnProperty(r)) {
-                self.app.get(r, self.routes[r]);
-            }
-        }
+        const route = {
+            method: 'GET',
+            path: '/api/healthcheck',
+            handler: handler
+        };
+
+        self.server.route(route);
     };
 
 
@@ -329,9 +330,13 @@ var StatuspageController = function (config) {
         // Start synchronizing
         setInterval(main, self.config.POLL_INTERVAL);
 
-        //  Start the app on the specific interface (and port).
-        self.httpServer.listen(self.config.PORT, function () {
-            console.log('Node server started on http://localhost:%d ...', self.config.PORT);
+        // Start the server
+        self.server.start((err) => {
+            if (err) {
+                throw err;
+            }
+            /** @namespace self.server.info.uri */
+            console.log('Server running at:', self.server.info.uri);
         });
     };
 
