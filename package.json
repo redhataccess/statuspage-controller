@@ -36,6 +36,6 @@
   "private": false,
   "main": "server/StatuspageController.js",
   "scripts": {
-    "start": "node server/StatuspageController.js",
+    "start": "node server/StatuspageController.js"
   }
 }
