@@ -5,6 +5,7 @@ const _ = require('lodash');
 const Hapi = require('hapi');
 const fs = require('fs');
 const httpAuth = require('http-auth');
+const Joi = require('joi');
 
 
 // Patch console.x methods in order to add timestamp information
@@ -159,14 +160,14 @@ var StatuspageController = function (config) {
                                     self.executePluginsStatusChange(component, new_status, oldest_violation);
 
                                     // update status of component based on violation rules
-                                    updateSPIOComponentStatus(component, new_status);
+                                    self.updateSPIOComponentStatus(component, new_status);
                                 }
                             }
                             else if (component.status != 'operational') {
                                 self.executePluginsStatusChange(component, 'operational');
 
                                 // No violation for this component so set it back to operational
-                                updateSPIOComponentStatus(component, 'operational');
+                                self.updateSPIOComponentStatus(component, 'operational');
                             }
                         }
                     }
@@ -176,22 +177,22 @@ var StatuspageController = function (config) {
                 }
             );
         }
-
-        function updateSPIOComponentStatus(component, status) {
-            console.log("Setting components status: ", component.name, status);
-            self.spio_patch_args.data = "component[status]=" + status;
-            self.client.patch(self.spio_url + "/components/" + component.id + ".json", self.spio_patch_args,
-                function (data, response) {
-                    if (response.statusCode === 200) {
-                        console.log("Status updated successfully for component: ", component.name, status);
-                    }
-                    else {
-                        console.error("Error updating status for component: ", component.name, status, response.statusCode);
-                    }
-                }
-            );
-        }
     }
+
+    self.updateSPIOComponentStatus = function (component, status) {
+        console.log("Setting components status: ", component.name, status);
+        self.spio_patch_args.data = "component[status]=" + status;
+        self.client.patch(self.spio_url + "/components/" + component.id + ".json", self.spio_patch_args,
+            function (data, response) {
+                if (response.statusCode === 200) {
+                    console.log("Status updated successfully for component: ", component.name, status);
+                }
+                else {
+                    console.error("Error updating status for component: ", component.name, status, response.statusCode);
+                }
+            }
+        );
+    };
 
     /**
      * Execute all plugin status change functions
@@ -267,7 +268,11 @@ var StatuspageController = function (config) {
 
         self.oldest_violation_per_policy = {};
 
+        // Registered plugins
         self._plugins = [];
+
+        // statuspage.io component overrides.  Automatic state changing won't be applied to these
+        self._overrides = {};
     };
 
     self.validateApiConfig = function () {
@@ -316,14 +321,70 @@ var StatuspageController = function (config) {
                     response.type('application/json');
                 };
 
-                // routes
-                const route = {
-                    method: 'GET',
-                    path: '/api/healthcheck',
-                    handler: healthCheckHandler,
+                const overridesGetHandler = (request, reply) => {
+                    let response = reply(self._overrides);
+                    response.type('application/json');
                 };
 
-                self.server.route(route);
+                const overridesPostHandler = (request, reply) => {
+                    let override = request.payload;
+
+                    console.log("[/api/overrides POST] ",  override);
+
+                    self._overrides[override.component_name] = override;
+
+                    // remove the override after the given seconds
+                    setTimeout(() => {
+                        delete self._overrides[request.payload.component_name]
+                    }, override.seconds * 1000);
+
+                    // Also optionally set the new status in statuspage.io
+                    if (override.new_status) {
+                        self.updateSPIOComponentStatus(override.component_name, override.new_status);
+                    }
+
+                    let response = reply({
+                        message: "Successfully added override",
+                        component_name: override.component_name,
+                        seconds: override.seconds,
+                    });
+                    response.type('application/json');
+                };
+
+                // routes
+                // noinspection JSUnresolvedFunction
+                const routes = [
+                    {
+                        method: 'GET',
+                        path: '/api/healthcheck',
+                        handler: healthCheckHandler,
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/overrides',
+                        handler: overridesGetHandler,
+                        config: {
+                            auth: 'http-auth',
+                        }
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/overrides',
+                        handler: overridesPostHandler,
+                        config: {
+                            auth: 'http-auth',
+                            validate: {
+                                payload: {
+                                    component_name: Joi.string().min(1).required(),
+                                    seconds: Joi.number().min(0).max(2628000).required(), // 1 month max
+                                    new_status: Joi.string().optional()
+                                }
+                            },
+                        }
+                    }
+                ];
+
+                self.server.route(routes);
 
                 self.apiInitialized = true;
             } catch (e) {
