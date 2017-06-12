@@ -1,8 +1,10 @@
 'use strict';
 
-var Client = require('node-rest-client').Client;
-var _ = require('lodash');
+const Client = require('node-rest-client').Client;
+const _ = require('lodash');
 const Hapi = require('hapi');
+const fs = require('fs');
+const httpAuth = require('http-auth');
 
 
 // Patch console.x methods in order to add timestamp information
@@ -20,11 +22,10 @@ require("console-stamp")(console, {pattern: "mm/dd/yyyy HH:MM:ss.l"});
  *
  */
 var StatuspageController = function (config) {
-
-    config = config || {};
-
     //  Scope.
     var self = this;
+
+    config = config || {};
 
     /**
      * Configuration settings.
@@ -36,6 +37,8 @@ var StatuspageController = function (config) {
         NR_API_KEY:    process.env.NR_API_KEY    || config.NR_API_KEY,
         SPIO_PAGE_ID:  process.env.SPIO_PAGE_ID  || config.SPIO_PAGE_ID,
         SPIO_API_KEY:  process.env.SPIO_API_KEY  || config.SPIO_API_KEY,
+        HTPASSWD_FILE: process.env.HTPASSWD_FILE || config.HTPASSWD_FILE,
+        TLS:           config.TLS,
         THRESHOLDS:    config.THRESHOLDS || [
             {
                 "duration": 600,
@@ -267,31 +270,70 @@ var StatuspageController = function (config) {
         self._plugins = [];
     };
 
+    self.validateApiConfig = function () {
+        let valid = false;
+        if (self.config.HTPASSWD_FILE && self.config.TLS) {
+            if (self.config.TLS.key && self.config.TLS.cert) {
+                valid = true;
+            }
+        }
+        return valid;
+    };
+
     /**
-     *  Initialize the server (express) and create the routes and register
+     *  Initialize the API server (hapi.js) and create the routes and register
      *  the handlers.
      */
-    self.initializeServer = function () {
-        // Create a server with a host and port
-        self.server = new Hapi.Server();
-        self.server.connection({
-            host: 'localhost',
-            port: self.config.PORT,
-        });
+    self.initializeApiServer = function () {
+        // first validate the required configs: HTPASSWD and TLS
+        if (self.validateApiConfig()) {
+            try { // Create a server with a host and port
+                self.server = new Hapi.Server();
+                self.server.connection({
+                    host: 'localhost',
+                    port: self.config.PORT,
+                    tls: {
+                        key: fs.readFileSync(self.config.TLS.key),
+                        cert: fs.readFileSync(self.config.TLS.cert),
+                    }
+                });
 
-        // Add the route
-        const handler = function routeHandler (request, reply) {
-            let response = reply('{}');
-            response.type('application/json');
-        };
+                // Setup auth.
+                const basic = httpAuth.basic({
+                    realm: "Statuspage Controller",
+                    file: self.config.HTPASSWD_FILE,
+                });
 
-        const route = {
-            method: 'GET',
-            path: '/api/healthcheck',
-            handler: handler
-        };
+                // Register auth plugin.
+                self.server.register(httpAuth.hapi());
 
-        self.server.route(route);
+                // Setup strategy.
+                self.server.auth.strategy('http-auth', 'http', basic);
+
+                // route handlers
+                const healthCheckHandler = (request, reply) => {
+                    let response = reply('{}');
+                    response.type('application/json');
+                };
+
+                // routes
+                const route = {
+                    method: 'GET',
+                    path: '/api/healthcheck',
+                    handler: healthCheckHandler,
+                };
+
+                self.server.route(route);
+
+                self.apiInitialized = true;
+            } catch (e) {
+                console.error('There was a problem initializing API: ', e);
+                console.error('For help refer to the API documentation: https://github.com/redhataccess/statuspage-controller');
+            }
+        }
+        else {
+            console.error("Invalid API config. For help refer to the API documentation: https://github.com/redhataccess/statuspage-controller");
+        }
     };
 
 
@@ -304,7 +346,7 @@ var StatuspageController = function (config) {
         self.setupTerminationHandlers();
 
         // Create the express server and routes.
-        self.initializeServer();
+        self.initializeApiServer();
     };
 
 
@@ -330,14 +372,18 @@ var StatuspageController = function (config) {
         // Start synchronizing
         setInterval(main, self.config.POLL_INTERVAL);
 
-        // Start the server
-        self.server.start((err) => {
-            if (err) {
-                throw err;
-            }
-            /** @namespace self.server.info.uri */
-            console.log('Server running at:', self.server.info.uri);
-        });
+        if (self.apiInitialized) {
+            // Start the server
+            self.server.start((err) => {
+                if (err) {
+                    console.error('There was an error starting the api server: ', err);
+                }
+                else {
+                    /** @namespace self.server.info.uri */
+                    console.log('API Server running at:', self.server.info.uri);
+                }
+            });
+        }
     };
 
     self.maskString = function (s) {

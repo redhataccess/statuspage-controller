@@ -7,6 +7,11 @@ var config = {
     SPIO_API_KEY: 'spioapi',
     POLL_INTERVAL: 3000,
     PORT: 3000,
+    HTPASSWD_FILE: 'data/users.htpasswd',
+    TLS: {
+        key: 'data/selfsigned.key',
+        cert: 'data/selfsigned.crt',
+    },
     THRESHOLDS: [
         {
             "duration": 600,
