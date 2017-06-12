@@ -106,7 +106,7 @@ In order to use the built in API you will have to configure 2 things:
         NR_API_KEY: process.env.NR_API_KEY,
         SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
         SPIO_API_KEY: process.env.SPIO_API_KEY,
-        HTPASSWD_FILE: '/path/to/users.htpasswd myuser',
+        HTPASSWD_FILE: '/path/to/users.htpasswd',
         TLS: {
             key:  "/path/to/selfsigned.key"),
             cert: "/path/to/selfsigned.crt"),
