@@ -146,10 +146,22 @@ var StatuspageController = function (config) {
                     if (response.statusCode === 200) {
                         for (var i = 0; i < data.length; i++) {
                             var component = data[i];
+                            var componentName = component.name.toLowerCase();
 
-                            //console.log("Component: ", component);
+                            // Check if this component is linked
+                            if (!self._alertPolicies[componentName]) {
+                                console.log('Component not linked, skipping: ', componentName);
+                                continue; // skip this component
+                            }
 
-                            var oldest_violation = self.oldest_violation_per_policy[component.name.toLowerCase()];
+                            // Check if this component is overridden
+                            if (self._overrides[componentName]) {
+                                console.log('Component is currently overridden, skipping: ', componentName, self._overrides[componentName]);
+                                continue; // skip this component
+                            }
+
+                            // Component is linked and not overridden, sync status
+                            var oldest_violation = self.oldest_violation_per_policy[componentName];
                             if (oldest_violation) {
                                 console.log("Found component matching policy name: ", component.name);
                                 console.log("Violation duration, component status: ", oldest_violation.duration, component.status);
@@ -384,11 +396,13 @@ var StatuspageController = function (config) {
 
                     console.log("[/api/overrides.json POST] ",  override);
 
-                    self._overrides[override.component_name] = override;
+                    var componentName = override.component_name.toLowerCase();
+
+                    self._overrides[componentName] = override;
 
                     // remove the override after the given seconds
                     setTimeout(() => {
-                        delete self._overrides[request.payload.component_name]
+                        delete self._overrides[componentName]
                     }, override.seconds * 1000);
 
                     // Also optionally set the new status in statuspage.io
