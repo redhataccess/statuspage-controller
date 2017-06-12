@@ -5,7 +5,7 @@ var config = {
     NR_API_KEY: 'nrapi',
     SPIO_PAGE_ID: 'pageid',
     SPIO_API_KEY: 'spioapi',
-    POLL_INTERVAL: 3000,
+    POLL_INTERVAL: 10000,
     PORT: 3000,
     HTPASSWD_FILE: 'data/users.htpasswd',
     TLS: {
@@ -14,15 +14,15 @@ var config = {
     },
     THRESHOLDS: [
         {
-            "duration": 600,
+            "duration": 10,
             "status": "degraded_performance"
         },
         {
-            "duration": 1200,
+            "duration": 60,
             "status": "partial_outage"
         },
         {
-            "duration": 1800,
+            "duration": 90,
             "status": "major_outage"
         }
     ]

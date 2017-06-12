@@ -76,12 +76,17 @@ var StatuspageController = function (config) {
         console.log("Checking for open New Relic violations...");
         var currentPage = 1;
 
-        // reset policies
+        // reset incidents
         self.oldest_violation_per_policy = {};
 
-        self.client.get(self.nr_url + "/alerts_violations.json?only_open=true&page=" + currentPage, self.nr_args,
-            parseViolations
-        );
+        // kick off process by first refreshing the NR policy list, then getting violations
+        self.getNRAlertPolicies(getViolations);
+
+        function getViolations() {
+            self.client.get(self.nr_url + "/alerts_violations.json?only_open=true&page=" + currentPage, self.nr_args,
+                parseViolations
+            );
+        }
 
         /**
          * Recursively pages through New Relic violations and parses them, then hands off to updateSPIOComponents
@@ -91,11 +96,11 @@ var StatuspageController = function (config) {
          * @param response
          */
         function parseViolations(data, response) {
-            console.log("Current page: ", currentPage);
+            console.log("[alerts_violations] Current page: ", currentPage);
 
             if (data.violations) {
                 var violations = data.violations;
-                console.log("Violations total: ", violations.length);
+                console.log("Violations on page: ", violations.length);
 
                 if (violations.length > 0) {
                     // parsed response body as js object
@@ -127,7 +132,14 @@ var StatuspageController = function (config) {
                     );
                 }
                 else {
-                    console.log("No open violations.");
+                    var incidentCount = Object.keys(self.oldest_violation_per_policy).length;
+                    if (incidentCount > 0) {
+                        console.log("Open NR incidents: ", incidentCount);
+                    }
+                    else {
+                        console.log("No open NR incidents");
+                    }
+
                     // Now update SPIO components based on open violations
                     updateSPIOComponents();
                 }
@@ -144,9 +156,13 @@ var StatuspageController = function (config) {
             self.client.get(self.spio_url + "/components.json", self.spio_get_args,
                 function (data, response) {
                     if (response.statusCode === 200) {
+                        self._statupageComponents = {}; // refresh component list
+
                         for (var i = 0; i < data.length; i++) {
                             var component = data[i];
                             var componentName = component.name.toLowerCase();
+
+                            self._statupageComponents[componentName] = component;
 
                             // Check if this component is linked
                             if (!self._alertPolicies[componentName]) {
@@ -191,8 +207,9 @@ var StatuspageController = function (config) {
         }
     }
 
-    self.getNRAlertPolicies = function() {
+    self.getNRAlertPolicies = function(callback) {
         let currentPage = 1;
+        self._alertPolicies = {};
 
         /**
          * Recursively pages through New Relic alert polices and saves them
@@ -201,11 +218,11 @@ var StatuspageController = function (config) {
          * @param response
          */
         function parsePolicies(data, response) {
-            console.log("Current page: ", currentPage);
+            console.log("[alerts_policies] Current page: ", currentPage);
 
             if (data.policies) {
                 let policies = data.policies;
-                console.log("Policies total: ", policies.length);
+
 
                 if (policies.length > 0) {
                     // parsed response body as js object
@@ -222,8 +239,10 @@ var StatuspageController = function (config) {
                     );
                 }
                 else {
-                    console.log("No policies on page: ", currentPage);
-                    console.info('Alert policies: ', Object.keys(self._alertPolicies));
+                    console.log("NR Alert Policies total: ", Object.keys(self._alertPolicies).length);
+                    if (typeof callback == 'function') {
+                        callback();
+                    }
                 }
             }
             else {
@@ -233,6 +252,27 @@ var StatuspageController = function (config) {
 
         self.client.get(self.nr_url + "/alerts_policies.json?page=" + currentPage, self.nr_args,
             parsePolicies
+        );
+    };
+
+    self.getStatuspageComponents = function() {
+        // now update the statuspage.io component based on any matching policy-components names
+        self.client.get(self.spio_url + "/components.json", self.spio_get_args,
+            function (data, response) {
+                if (response.statusCode === 200) {
+                    console.log("Statuspage.io components: ", data.length);
+
+                    for (var i = 0; i < data.length; i++) {
+                        var component = data[i];
+                        var componentName = component.name.toLowerCase();
+
+                        self._statupageComponents[componentName] = component;
+                    }
+                }
+                else {
+                    console.log("[getStatuspageComponents] Invalid response from statuspage.io API. Status code: " + response.statusCode);
+                }
+            }
         );
     };
 
@@ -328,6 +368,9 @@ var StatuspageController = function (config) {
         // New Relic alert polices
         self._alertPolicies = {};
 
+        // Statuspage.io components
+        self._statupageComponents = {};
+
         // Registered plugins
         self._plugins = [];
 
@@ -407,7 +450,7 @@ var StatuspageController = function (config) {
 
                     // Also optionally set the new status in statuspage.io
                     if (override.new_status) {
-                        self.updateSPIOComponentStatus(override.component_name, override.new_status);
+                        self.updateSPIOComponentStatus(self._statupageComponents[componentName], override.new_status);
                     }
 
                     let response = reply({
@@ -473,6 +516,9 @@ var StatuspageController = function (config) {
 
         // Load all the currently defined alert polices from New Relic
         self.getNRAlertPolicies();
+
+        // Load up statuspage.io components
+        self.getStatuspageComponents();
 
         self.setupTerminationHandlers();
 
