@@ -80,6 +80,41 @@ For example, if you wanted to go strait to major outage after 10 minutes then yo
         }
     ]
 
+## API
+In order to use the built in API you will have to configure 2 things:
+1. Basic Auth.  You'll need to configure an htpasswrd file with user(s) created with `htpasswd` command.
+2. SSL cert files for https.
+ 
+### Basic Auth
+1. Either have htpasswd command installed with apache, or [npm-htpasswd](https://www.npmjs.com/package/htpasswd)
+2. Create a user and new htpasswd file: `htpasswd -c users.htpasswd myuser`
+3. Point the config at the password file: `HTPASSWD_FILE: '/path/to/users.htpasswd`
+
+### SSL
+1. Either use an existing key and cert of create self-signed cert using the following method:
+`openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout selfsigned.key -out selfsigned.crt`
+2. Point the config at your key and cert files using the `tls` object:
+`TLS: {key: '/path/to/selfsigned.key', cert: '/path/to/selfsigned.crt'`
+
+### Full Example
+    var StatuspageController = require('statuspage-controller')
+    var config = {
+        POLL_INTERVAL: 10000,
+        PORT: 8080,
+        NR_API_KEY: process.env.NR_API_KEY,
+        SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
+        SPIO_API_KEY: process.env.SPIO_API_KEY,
+        HTPASSWD_FILE: '/path/to/users.htpasswd myuser',
+        TLS: {
+            key:  "/path/to/selfsigned.key"),
+            cert: "/path/to/selfsigned.crt"),
+        }
+    };
+    var spc = new StatuspageController(config);
+    spc.start();
+
+**Basic auth and SSL are required to use the API** If these are not configured or fail the API server will not be started.
+
 ## Basic Design
 ![statuspagecontrolerdesign](https://cloud.githubusercontent.com/assets/3926730/17302336/c955254c-57e9-11e6-8ed9-af3062e0cd07.png)
 
