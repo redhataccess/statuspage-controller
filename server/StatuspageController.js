@@ -179,6 +179,51 @@ var StatuspageController = function (config) {
         }
     }
 
+    self.getNRAlertPolicies = function() {
+        let currentPage = 1;
+
+        /**
+         * Recursively pages through New Relic alert polices and saves them
+         * @param data
+         * @param data.policies
+         * @param response
+         */
+        function parsePolicies(data, response) {
+            console.log("Current page: ", currentPage);
+
+            if (data.policies) {
+                let policies = data.policies;
+                console.log("Policies total: ", policies.length);
+
+                if (policies.length > 0) {
+                    // parsed response body as js object
+                    for (var i = 0; i < policies.length; i++) {
+                        var policy = policies[i];
+                        var policy_name = policy.name.toLowerCase();
+                        self._alertPolicies[policy_name] = policy;
+                    }
+
+                    // recursively get and parse the next page
+                    currentPage++;
+                    self.client.get(self.nr_url + "/alerts_policies.json?page=" + currentPage, self.nr_args,
+                        parsePolicies
+                    );
+                }
+                else {
+                    console.log("No policies on page: ", currentPage);
+                    console.info('Alert policies: ', Object.keys(self._alertPolicies));
+                }
+            }
+            else {
+                console.log("Invalid response from New Relic API. Status Code: " + response.statusCode);
+            }
+        }
+
+        self.client.get(self.nr_url + "/alerts_policies.json?page=" + currentPage, self.nr_args,
+            parsePolicies
+        );
+    };
+
     self.updateSPIOComponentStatus = function (component, status) {
         console.log("Setting components status: ", component.name, status);
         self.spio_patch_args.data = "component[status]=" + status;
@@ -268,6 +313,9 @@ var StatuspageController = function (config) {
 
         self.oldest_violation_per_policy = {};
 
+        // New Relic alert polices
+        self._alertPolicies = {};
+
         // Registered plugins
         self._plugins = [];
 
@@ -317,11 +365,16 @@ var StatuspageController = function (config) {
 
                 // route handlers
                 const healthCheckHandler = (request, reply) => {
+                    //TODO: validate connection to New Relic and Statuspage.io
+                    console.log("[/api/healthcheck.json GET] received GET request");
+
                     let response = reply('{}');
                     response.type('application/json');
                 };
 
                 const overridesGetHandler = (request, reply) => {
+                    console.log("[/api/overrides.json GET] received GET request");
+
                     let response = reply(self._overrides);
                     response.type('application/json');
                 };
@@ -329,7 +382,7 @@ var StatuspageController = function (config) {
                 const overridesPostHandler = (request, reply) => {
                     let override = request.payload;
 
-                    console.log("[/api/overrides POST] ",  override);
+                    console.log("[/api/overrides.json POST] ",  override);
 
                     self._overrides[override.component_name] = override;
 
@@ -356,12 +409,12 @@ var StatuspageController = function (config) {
                 const routes = [
                     {
                         method: 'GET',
-                        path: '/api/healthcheck',
+                        path: '/api/healthcheck.json',
                         handler: healthCheckHandler,
                     },
                     {
                         method: 'GET',
-                        path: '/api/overrides',
+                        path: '/api/overrides.json',
                         handler: overridesGetHandler,
                         config: {
                             auth: 'http-auth',
@@ -369,7 +422,7 @@ var StatuspageController = function (config) {
                     },
                     {
                         method: 'POST',
-                        path: '/api/overrides',
+                        path: '/api/overrides.json',
                         handler: overridesPostHandler,
                         config: {
                             auth: 'http-auth',
@@ -403,6 +456,9 @@ var StatuspageController = function (config) {
      */
     self.initialize = function () {
         self.initializeVariables();
+
+        // Load all the currently defined alert polices from New Relic
+        self.getNRAlertPolicies();
 
         self.setupTerminationHandlers();
 
