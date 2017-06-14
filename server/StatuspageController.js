@@ -406,7 +406,12 @@ const StatuspageController = function (config) {
         // first validate the required configs: HTPASSWD and TLS
         if (self.validateApiConfig()) {
             try { // Create a server with a host and port
-                self.server = new Hapi.Server();
+                self.server = new Hapi.Server({
+                    debug: {
+                        log: ['hapi', 'error', 'debug', 'info', 'warning', 'request', 'server', 'timeout', 'internal', 'implementation', 'tail', 'remove', 'last', 'add'],
+                        request: ['hapi', 'error', 'debug', 'info', 'warning', 'request', 'server', 'timeout', 'internal', 'implementation', 'tail', 'remove', 'last', 'add']
+                    }
+                });
                 self.server.connection({
                     host: 'localhost',
                     port: self.config.PORT,

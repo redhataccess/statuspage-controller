@@ -1,5 +1,5 @@
 const spc = require('./../server/StatuspageController.js');
-const IrcPlugin = require('./test_plugin.js');
+const IrcPlugin = require('./example_plugin.js');
 
 const config = {
     NR_API_KEY: 'nrapi',
