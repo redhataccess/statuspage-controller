@@ -401,14 +401,19 @@ const StatuspageController = function (config) {
         if (self.validateApiConfig()) {
             try { // Create a server with a host and port
                 self.server = new Hapi.Server();
-                self.server.connection({
+                let connectionOptions = {
                     host: 'localhost',
                     port: self.config.PORT,
-                    tls: {
+                };
+
+                // optionally add ssl
+                if (self.config.TLS) {
+                    connectionOptions.tls = {
                         key: fs.readFileSync(self.config.TLS.key),
                         cert: fs.readFileSync(self.config.TLS.cert),
-                    }
-                });
+                    };
+                }
+                self.server.connection(connectionOptions);
 
                 let authScheme;
 
