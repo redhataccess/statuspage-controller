@@ -1,7 +1,7 @@
-var spc = require('./../server/StatuspageController.js');
-var IrcPlugin = require('./test_plugin.js');
+const spc = require('./../server/StatuspageController.js');
+const IrcPlugin = require('./test_plugin.js');
 
-var config = {
+const config = {
     NR_API_KEY: 'nrapi',
     SPIO_PAGE_ID: 'pageid',
     SPIO_API_KEY: 'spioapi',
@@ -28,7 +28,7 @@ var config = {
     ]
 };
 
-var plugin_config = {
+const plugin_config = {
     host: 'irc.host.com',
     nick: 'statusbot',
     channels: [
@@ -36,9 +36,9 @@ var plugin_config = {
     ]
 };
 
-var p = new IrcPlugin(plugin_config);
+const p = new IrcPlugin(plugin_config);
 
-var spcInstance = new spc(config);
+const spcInstance = new spc(config);
 
 spcInstance.addPlugin(p);
 

@@ -549,17 +549,8 @@ const StatuspageController = function (config) {
      */
     self.initialize = function () {
         self.initializeVariables();
-
-        // Load all the currently defined alert polices from New Relic
-        self.getNRAlertPolicies();
-
-        // Load up statuspage.io components
-        self.getStatuspageComponents();
-
-        self.setupTerminationHandlers();
-
-        // Create the express server and routes.
         self.initializeApiServer();
+        self.setupTerminationHandlers();
     };
 
 
@@ -581,6 +572,12 @@ const StatuspageController = function (config) {
         console.log("New Relic API key: ", self.maskString(self.config.NR_API_KEY));
         console.log("StatusPage Page ID: ", self.maskString(self.config.SPIO_PAGE_ID));
         console.log("StatusPage API key: ", self.maskString(self.config.SPIO_API_KEY));
+
+        // Load all the currently defined alert polices from New Relic
+        self.getNRAlertPolicies();
+
+        // Load up statuspage.io components
+        self.getStatuspageComponents();
 
         // Start synchronizing
         setInterval(main, self.config.POLL_INTERVAL);
