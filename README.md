@@ -108,8 +108,8 @@ In order to use the built in API you will have to configure 2 things:
         SPIO_API_KEY: process.env.SPIO_API_KEY,
         HTPASSWD_FILE: '/path/to/users.htpasswd',
         TLS: {
-            key:  "/path/to/selfsigned.key"),
-            cert: "/path/to/selfsigned.crt"),
+            key:  "/path/to/selfsigned.key",
+            cert: "/path/to/selfsigned.crt",
         }
     };
     var spc = new StatuspageController(config);
