@@ -402,7 +402,6 @@ const StatuspageController = function (config) {
             try { // Create a server with a host and port
                 self.server = new Hapi.Server();
                 let connectionOptions = {
-                    host: 'localhost',
                     port: self.config.PORT,
                 };
 
