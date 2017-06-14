@@ -22,9 +22,9 @@ require("console-stamp")(console, {pattern: "mm/dd/yyyy HH:MM:ss.l"});
  * @constructor
  *
  */
-var StatuspageController = function (config) {
+const StatuspageController = function (config) {
     //  Scope.
-    var self = this;
+    const self = this;
 
     config = config || {};
 
@@ -57,10 +57,10 @@ var StatuspageController = function (config) {
     };
 
     function getStatus(duration) {
-        var rules = _.orderBy(self.config.THRESHOLDS, 'duration', 'desc');
+        const rules = _.orderBy(self.config.THRESHOLDS, 'duration', 'desc');
 
-        var rule = {};
-        for (var i = 0, l = rules.length; i < l; ++i) {
+        let rule = {};
+        for (let i = 0; i < rules.length; ++i) {
             if (duration > rules[i].duration) {
                 rule = rules[i];
                 break;
@@ -74,7 +74,7 @@ var StatuspageController = function (config) {
     function main() {
         // check for any open violations
         console.log("Checking for open New Relic violations...");
-        var currentPage = 1;
+        let currentPage = 1;
 
         // reset incidents
         self.oldest_violation_per_policy = {};
@@ -99,19 +99,19 @@ var StatuspageController = function (config) {
             console.log("[alerts_violations] Current page: ", currentPage);
 
             if (data.violations) {
-                var violations = data.violations;
+                const violations = data.violations;
                 console.log("Violations on page: ", violations.length);
 
                 if (violations.length > 0) {
                     // parsed response body as js object
-                    for (var i = 0; i < violations.length; i++) {
-                        var violation = violations[i];
+                    for (let i = 0; i < violations.length; i++) {
+                        const violation = violations[i];
                         //console.log("violation: ", violation);
-                        var policy_name = violation.policy_name.toLowerCase();
+                        const policy_name = violation.policy_name.toLowerCase();
 
                         // Save the oldest violation for this policy
                         if (self.oldest_violation_per_policy[policy_name]) {
-                            var oldest = self.oldest_violation_per_policy[policy_name];
+                            const oldest = self.oldest_violation_per_policy[policy_name];
                             //console.log("checking if this violation is older: ", violation.duration, oldest.duration);
                             if (violation.duration > oldest.duration) {
                                 //console.log("Setting to oldest: ", violation);
@@ -132,12 +132,12 @@ var StatuspageController = function (config) {
                     );
                 }
                 else {
-                    var incidentCount = Object.keys(self.oldest_violation_per_policy).length;
+                    const incidentCount = Object.keys(self.oldest_violation_per_policy).length;
                     if (incidentCount > 0) {
-                        console.log("Open NR incidents: ", incidentCount);
+                        console.log("Open New Relic incidents: ", incidentCount);
                     }
                     else {
-                        console.log("No open NR incidents");
+                        console.log("No open New Relic incidents");
                     }
 
                     // Now update SPIO components based on open violations
@@ -158,9 +158,9 @@ var StatuspageController = function (config) {
                     if (response.statusCode === 200) {
                         self._statupageComponents = {}; // refresh component list
 
-                        for (var i = 0; i < data.length; i++) {
-                            var component = data[i];
-                            var componentName = component.name.toLowerCase();
+                        for (let i = 0; i < data.length; i++) {
+                            const component = data[i];
+                            const componentName = component.name.toLowerCase();
 
                             self._statupageComponents[componentName] = component;
 
@@ -177,21 +177,21 @@ var StatuspageController = function (config) {
                             }
 
                             // Component is linked and not overridden, sync status
-                            var oldest_violation = self.oldest_violation_per_policy[componentName];
+                            const oldest_violation = self.oldest_violation_per_policy[componentName];
                             if (oldest_violation) {
                                 console.log("Found component matching policy name: ", component.name);
                                 console.log("Violation duration, component status: ", oldest_violation.duration, component.status);
 
-                                var new_status = getStatus(oldest_violation.duration);
+                                const new_status = getStatus(oldest_violation.duration);
 
-                                if (component.status != new_status) {
+                                if (component.status !== new_status) {
                                     self.executePluginsStatusChange(component, new_status, oldest_violation);
 
                                     // update status of component based on violation rules
                                     self.updateSPIOComponentStatus(component, new_status);
                                 }
                             }
-                            else if (component.status != 'operational') {
+                            else if (component.status !== 'operational') {
                                 self.executePluginsStatusChange(component, 'operational');
 
                                 // No violation for this component so set it back to operational
@@ -207,7 +207,7 @@ var StatuspageController = function (config) {
         }
     }
 
-    self.getNRAlertPolicies = function(callback) {
+    self.getNRAlertPolicies = function (callback) {
         let currentPage = 1;
         self._alertPolicies = {};
 
@@ -226,9 +226,9 @@ var StatuspageController = function (config) {
 
                 if (policies.length > 0) {
                     // parsed response body as js object
-                    for (var i = 0; i < policies.length; i++) {
-                        var policy = policies[i];
-                        var policy_name = policy.name.toLowerCase();
+                    for (let i = 0; i < policies.length; i++) {
+                        const policy = policies[i];
+                        const policy_name = policy.name.toLowerCase();
                         self._alertPolicies[policy_name] = policy;
                     }
 
@@ -240,7 +240,7 @@ var StatuspageController = function (config) {
                 }
                 else {
                     console.log("NR Alert Policies total: ", Object.keys(self._alertPolicies).length);
-                    if (typeof callback == 'function') {
+                    if (typeof callback === 'function') {
                         callback();
                     }
                 }
@@ -255,16 +255,16 @@ var StatuspageController = function (config) {
         );
     };
 
-    self.getStatuspageComponents = function() {
+    self.getStatuspageComponents = function () {
         // now update the statuspage.io component based on any matching policy-components names
         self.client.get(self.spio_url + "/components.json", self.spio_get_args,
             function (data, response) {
                 if (response.statusCode === 200) {
                     console.log("Statuspage.io components: ", data.length);
 
-                    for (var i = 0; i < data.length; i++) {
-                        var component = data[i];
-                        var componentName = component.name.toLowerCase();
+                    for (let i = 0; i < data.length; i++) {
+                        const component = data[i];
+                        const componentName = component.name.toLowerCase();
 
                         self._statupageComponents[componentName] = component;
                     }
@@ -303,7 +303,7 @@ var StatuspageController = function (config) {
             /** @namespace plugin.hookStatusChange */
             if (plugin && typeof plugin.hookStatusChange === "function") {
                 plugin.hookStatusChange(component, status, violation);
-           }
+            }
         });
     };
 
@@ -437,9 +437,9 @@ var StatuspageController = function (config) {
                 const overridesPostHandler = (request, reply) => {
                     let override = request.payload;
 
-                    console.log("[/api/overrides.json POST] ",  override);
+                    console.log("[/api/overrides.json POST] ", override);
 
-                    var componentName = override.component_name.toLowerCase();
+                    const componentName = override.component_name.toLowerCase();
 
                     self._overrides[componentName] = override;
 
