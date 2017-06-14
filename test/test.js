@@ -5,7 +5,7 @@ var config = {
     NR_API_KEY: 'nrapi',
     SPIO_PAGE_ID: 'pageid',
     SPIO_API_KEY: 'spioapi',
-    POLL_INTERVAL: 10000,
+    POLL_INTERVAL: 60000,
     PORT: 3000,
     HTPASSWD_FILE: 'data/users.htpasswd',
     TLS: {

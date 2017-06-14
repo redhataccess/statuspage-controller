@@ -241,12 +241,15 @@ const StatuspageController = function (config) {
                 else {
                     console.log("NR Alert Policies total: ", Object.keys(self._alertPolicies).length);
                     if (typeof callback === 'function') {
-                        callback();
+                        callback(true);
                     }
                 }
             }
             else {
                 console.log("Invalid response from New Relic API. Status Code: " + response.statusCode);
+                if (typeof callback === 'function') {
+                    callback(false);
+                }
             }
         }
 
@@ -255,7 +258,7 @@ const StatuspageController = function (config) {
         );
     };
 
-    self.getStatuspageComponents = function () {
+    self.getStatuspageComponents = function (callback) {
         // now update the statuspage.io component based on any matching policy-components names
         self.client.get(self.spio_url + "/components.json", self.spio_get_args,
             function (data, response) {
@@ -268,9 +271,16 @@ const StatuspageController = function (config) {
 
                         self._statupageComponents[componentName] = component;
                     }
+
+                    if (typeof callback === 'function') {
+                        callback(true); // successful
+                    }
                 }
                 else {
                     console.log("[getStatuspageComponents] Invalid response from statuspage.io API. Status code: " + response.statusCode);
+                    if (typeof callback === 'function') {
+                        callback(false); // unsuccessful
+                    }
                 }
             }
         );
@@ -420,11 +430,37 @@ const StatuspageController = function (config) {
 
                 // route handlers
                 const healthCheckHandler = (request, reply) => {
-                    //TODO: validate connection to New Relic and Statuspage.io
                     console.log("[/api/healthcheck.json GET] received GET request");
 
-                    let response = reply('{}');
-                    response.type('application/json');
+                    let res = {
+                        message: 'New Relic and statuspage.io connections established.',
+                        ok: true,
+                    };
+
+                    // check new relic connection
+                    self.getNRAlertPolicies((ok) => {
+                        if (ok) {
+                            // now check statuspage.io connection
+                            self.getStatuspageComponents((ok) => {
+                                if (!ok) {
+                                    res.message = 'Trouble connecting to statuspage.io API, check your statuspage.io API key and Page Id.';
+                                    res.ok = false;
+                                }
+
+                                let response = reply(res);
+                                response.type('application/json');
+                            });
+                        }
+                        else {
+                            if (!ok) {
+                                res.message = 'Trouble connecting to New Relic API, check your New Relic API key.';
+                                res.ok = false;
+                            }
+
+                            let response = reply(res);
+                            response.type('application/json');
+                        }
+                    });
                 };
 
                 const overridesGetHandler = (request, reply) => {
