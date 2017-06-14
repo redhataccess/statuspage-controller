@@ -389,13 +389,7 @@ const StatuspageController = function (config) {
     };
 
     self.validateApiConfig = function () {
-        let valid = false;
-        if (self.config.HTPASSWD_FILE && self.config.TLS) {
-            if (self.config.TLS.key && self.config.TLS.cert) {
-                valid = true;
-            }
-        }
-        return valid;
+        return true;  // nothing to validate yet
     };
 
     /**
@@ -406,12 +400,7 @@ const StatuspageController = function (config) {
         // first validate the required configs: HTPASSWD and TLS
         if (self.validateApiConfig()) {
             try { // Create a server with a host and port
-                self.server = new Hapi.Server({
-                    debug: {
-                        log: ['hapi', 'error', 'debug', 'info', 'warning', 'request', 'server', 'timeout', 'internal', 'implementation', 'tail', 'remove', 'last', 'add'],
-                        request: ['hapi', 'error', 'debug', 'info', 'warning', 'request', 'server', 'timeout', 'internal', 'implementation', 'tail', 'remove', 'last', 'add']
-                    }
-                });
+                self.server = new Hapi.Server();
                 self.server.connection({
                     host: 'localhost',
                     port: self.config.PORT,
@@ -421,17 +410,23 @@ const StatuspageController = function (config) {
                     }
                 });
 
-                // Setup auth.
-                const basic = httpAuth.basic({
-                    realm: "Statuspage Controller",
-                    file: self.config.HTPASSWD_FILE,
-                });
+                let authScheme;
 
-                // Register auth plugin.
-                self.server.register(httpAuth.hapi());
+                if (self.config.HTPASSWD_FILE) {
+                    // Setup auth.
+                    authScheme = httpAuth.basic({
+                        realm: "Statuspage Controller",
+                        file: self.config.HTPASSWD_FILE,
+                    });
 
-                // Setup strategy.
-                self.server.auth.strategy('http-auth', 'http', basic);
+                    // Register auth plugin.
+                    self.server.register(httpAuth.hapi());
+
+                    // Setup strategy.
+                    self.server.auth.strategy('http-auth', 'http', authScheme);
+
+                    console.log('API using basic auth');
+                }
 
                 // route handlers
                 const healthCheckHandler = (request, reply) => {
@@ -515,7 +510,7 @@ const StatuspageController = function (config) {
                         path: '/api/overrides.json',
                         handler: overridesGetHandler,
                         config: {
-                            auth: 'http-auth',
+                            auth: authScheme ? 'http-auth' : undefined,
                         }
                     },
                     {
@@ -523,7 +518,7 @@ const StatuspageController = function (config) {
                         path: '/api/overrides.json',
                         handler: overridesPostHandler,
                         config: {
-                            auth: 'http-auth',
+                            auth: authScheme ? 'http-auth' : undefined,
                             validate: {
                                 payload: {
                                     component_name: Joi.string().min(1).required(),
