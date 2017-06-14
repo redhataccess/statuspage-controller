@@ -89,12 +89,12 @@ In order to use the built in API you will have to configure 2 things:
  
 ### Basic Auth
 1. Either have htpasswd command installed with apache, or [npm-htpasswd](https://www.npmjs.com/package/htpasswd)
-2. Create a user and new htpasswd file: `htpasswd -c users.htpasswd myuser`
+2. Create a user and new htpasswd file: `htpasswd -c /path/to/users.htpasswd myuser`
 3. Point the config at the password file: `HTPASSWD_FILE: '/path/to/users.htpasswd`
 
 ### SSL
 1. Either use an existing key and cert of create self-signed cert using the following method:
-`openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout selfsigned.key -out selfsigned.crt`
+`openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /path/to/selfsigned.key -out /path/to/selfsigned.crt`
 2. Point the config at your key and cert files using the `tls` object:
 `TLS: {key: '/path/to/selfsigned.key', cert: '/path/to/selfsigned.crt'`
 
