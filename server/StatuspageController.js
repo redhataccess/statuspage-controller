@@ -433,6 +433,11 @@ const StatuspageController = function (config) {
                 }
 
                 // route handlers
+                const readyHandler = (request, reply) => {
+                    console.log("[/ready GET] received GET request");
+                    reply("ready");
+                };
+
                 const healthCheckHandler = (request, reply) => {
                     console.log("[/api/healthcheck.json GET] received GET request");
 
@@ -504,6 +509,11 @@ const StatuspageController = function (config) {
                 // routes
                 // noinspection JSUnresolvedFunction
                 const routes = [
+                    {
+                        method: 'GET',
+                        path: '/ready',
+                        handler: readyHandler,
+                    },
                     {
                         method: 'GET',
                         path: '/api/healthcheck.json',
