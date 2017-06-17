@@ -156,10 +156,13 @@ Example:
     spc.start();
 
 ### Full Example
+Here is an example with all optional config options set:
+
     var StatuspageController = require('statuspage-controller')
     var config = {
         POLL_INTERVAL: 10000,
         PORT: 8080,
+        DEBUG: false,
         NR_API_KEY: process.env.NR_API_KEY,
         SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
         SPIO_API_KEY: process.env.SPIO_API_KEY,
