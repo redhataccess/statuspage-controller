@@ -120,7 +120,6 @@ Response
 
     {"message":"Successfully added override","component_name":"Downloads","seconds":60}
 
-
 ### Authentication
 Optionally you can enable basic auth for the API.  You'll need to configure an htpasswrd file with user(s) created with `htpasswd` command.
 
@@ -128,6 +127,7 @@ Optionally you can enable basic auth for the API.  You'll need to configure an h
 2. Create a user and new htpasswd file: `htpasswd -c /path/to/users.htpasswd myuser`
 3. Point the config at the password file: `HTPASSWD_FILE: '/path/to/users.htpasswd`
 
+Example:
 
     var StatuspageController = require('statuspage-controller')
     var config = {
@@ -136,9 +136,6 @@ Optionally you can enable basic auth for the API.  You'll need to configure an h
     var spc = new StatuspageController(config);
     spc.start();
 
-
-
-
 ### SSL
 Optionally you can configure the API server to use SSL.  See [node.js https](https://nodejs.org/api/https.html#https_https_createserver_options_requestlistener)
  
@@ -146,6 +143,7 @@ Optionally you can configure the API server to use SSL.  See [node.js https](htt
 `openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /path/to/selfsigned.key -out /path/to/selfsigned.crt`
 2. Point the config at your key and cert files using the `tls` object:
 
+Example:
 
     var StatuspageController = require('statuspage-controller')
     var config = {
@@ -156,9 +154,6 @@ Optionally you can configure the API server to use SSL.  See [node.js https](htt
     };
     var spc = new StatuspageController(config);
     spc.start();
-
-
-
 
 ### Full Example
     var StatuspageController = require('statuspage-controller')
