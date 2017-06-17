@@ -33,6 +33,7 @@ const StatuspageController = function (config) {
      * @type {{}}
      */
     this.config = {
+        DEBUG:         config.DEBUG              || false,
         POLL_INTERVAL: process.env.POLL_INTERVAL || config.POLL_INTERVAL || 30000,
         PORT:          process.env.PORT          || config.PORT          || 8080,
         NR_API_KEY:    process.env.NR_API_KEY    || config.NR_API_KEY,
@@ -287,18 +288,20 @@ const StatuspageController = function (config) {
     };
 
     self.updateSPIOComponentStatus = function (component, status) {
-        console.log("Setting components status: ", component.name, status);
-        self.spio_patch_args.data = "component[status]=" + status;
-        self.client.patch(self.spio_url + "/components/" + component.id + ".json", self.spio_patch_args,
-            function (data, response) {
-                if (response.statusCode === 200) {
-                    console.log("Status updated successfully for component: ", component.name, status);
+        if (component && component.name && status) {
+            console.log("Setting components status: ", component.name, status);
+            self.spio_patch_args.data = "component[status]=" + status;
+            self.client.patch(self.spio_url + "/components/" + component.id + ".json", self.spio_patch_args,
+                function (data, response) {
+                    if (response.statusCode === 200) {
+                        console.log("Status updated successfully for component: ", component.name, status);
+                    }
+                    else {
+                        console.error("Error updating status for component: ", component.name, status, response.statusCode);
+                    }
                 }
-                else {
-                    console.error("Error updating status for component: ", component.name, status, response.statusCode);
-                }
-            }
-        );
+            );
+        }
     };
 
     /**
@@ -400,7 +403,19 @@ const StatuspageController = function (config) {
         // first validate the required configs: HTPASSWD and TLS
         if (self.validateApiConfig()) {
             try { // Create a server with a host and port
-                self.server = new Hapi.Server();
+                let options = {};
+
+                if (self.config.DEBUG) {
+                    let debugTags = ['hapi', 'error', 'debug', 'info', 'warning', 'request', 'server', 'timeout',
+                        'internal', 'implementation', 'tail', 'remove', 'last', 'add', 'received', 'handler',
+                        'response', 'auth', 'pre', 'state', 'payload', 'validation', 'load', 'connection', 'client'];
+                    options.debug = {
+                        log: debugTags,
+                        request: debugTags
+                    }
+                }
+
+                self.server = new Hapi.Server(options);
                 let connectionOptions = {
                     port: self.config.PORT,
                 };
@@ -495,7 +510,14 @@ const StatuspageController = function (config) {
 
                     // Also optionally set the new status in statuspage.io
                     if (override.new_status) {
-                        self.updateSPIOComponentStatus(self._statupageComponents[componentName], override.new_status);
+                        let statupageComponent = self._statupageComponents[componentName];
+                        if (statupageComponent) {
+                            self.updateSPIOComponentStatus(statupageComponent, override.new_status);
+                        }
+                        else {
+                            console.error('[overridesPostHandler] tried to set new status on undefined component:', componentName, override.new_status);
+                        }
+
                     }
 
                     let response = reply({

@@ -5,8 +5,9 @@ const config = {
     NR_API_KEY: 'nrapi',
     SPIO_PAGE_ID: 'pageid',
     SPIO_API_KEY: 'spioapi',
-    POLL_INTERVAL: 60000,
-    PORT: 3000,
+    // POLL_INTERVAL: 60000,
+    // PORT: 3000,
+    // DEBUG: false,
     // HTPASSWD_FILE: 'data/users.htpasswd',
     // TLS: {
     //     key: 'data/selfsigned.key',

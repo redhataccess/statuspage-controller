@@ -81,22 +81,84 @@ For example, if you wanted to go strait to major outage after 10 minutes then yo
             "status": "major_outage"
         }
     ]
+    
+### Debug
+Enable extra debug logging to the console.  Don't enable this in production.
+
+    var StatuspageController = require('statuspage-controller')
+    var config = {
+        DEBUG: true,
+    };
+    var spc = new StatuspageController(config);
+    spc.start();
+    
 
 ## API
-In order to use the built in API you will have to configure 2 things:
-1. Basic Auth.  You'll need to configure an htpasswrd file with user(s) created with `htpasswd` command.
-2. SSL cert files for https.
- 
-### Basic Auth
-1. Either have htpasswd command installed with apache, or [npm-htpasswd](https://www.npmjs.com/package/htpasswd)
+### Methods
+There are a few API methods that check the health of the controller
+and allow you to set component overrides: 
+
+* GET /api/healthcheck.json - Check the health of the controller
+* POST /api/overrides.json - Create a temporary override of a given statuspage.io component
+* GET /api/overrides.json - List current active overrides
+
+### Healthcheck
+Request
+
+    curl http://localhost:8080/api/healthcheck.json
+    
+Response
+
+    {"message":"New Relic and statuspage.io connections established.","ok":true}
+
+### Overrides
+Request
+
+    curl -X POST -H 'content-type:application/json' http://localhost:8080/api/overrides.json -d '{"component_name": "Downloads", "seconds":60, "new_status":"major_outage"}'
+    
+Response
+
+    {"message":"Successfully added override","component_name":"Downloads","seconds":60}
+
+
+### Authentication
+Optionally you can enable basic auth for the API.  You'll need to configure an htpasswrd file with user(s) created with `htpasswd` command.
+
+1. Either have htpasswd command installed with Apache, or [npm-htpasswd](https://www.npmjs.com/package/htpasswd)
 2. Create a user and new htpasswd file: `htpasswd -c /path/to/users.htpasswd myuser`
 3. Point the config at the password file: `HTPASSWD_FILE: '/path/to/users.htpasswd`
 
+
+    var StatuspageController = require('statuspage-controller')
+    var config = {
+        HTPASSWD_FILE: '/path/to/users.htpasswd',
+    };
+    var spc = new StatuspageController(config);
+    spc.start();
+
+
+
+
 ### SSL
+Optionally you can configure the API server to use SSL.  See [node.js https](https://nodejs.org/api/https.html#https_https_createserver_options_requestlistener)
+ 
 1. Either use an existing key and cert of create self-signed cert using the following method:
 `openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /path/to/selfsigned.key -out /path/to/selfsigned.crt`
 2. Point the config at your key and cert files using the `tls` object:
-`TLS: {key: '/path/to/selfsigned.key', cert: '/path/to/selfsigned.crt'`
+
+
+    var StatuspageController = require('statuspage-controller')
+    var config = {
+        TLS: {
+            key:  "/path/to/selfsigned.key",
+            cert: "/path/to/selfsigned.crt",
+        }
+    };
+    var spc = new StatuspageController(config);
+    spc.start();
+
+
+
 
 ### Full Example
     var StatuspageController = require('statuspage-controller')
@@ -118,7 +180,7 @@ In order to use the built in API you will have to configure 2 things:
 **Basic auth and SSL are required to use the API** If these are not configured or fail the API server will not be started.
 
 ## Sync vs Push
-Both New Relic and StatusPage.io have ways to automate via push.  New Relic alerts can post to a webhook, or send an email, and StatusPage.io components can be updated with a unique email.  The problem with this method is that if a message is ever lost, then the state between New Relic and StatusPage.io will get out of sync.
+Both New Relic and StatusPage.io have ways to automate via push.  New Relic alerts can post to a webhook, or send an email, and StatusPage.io components can be updated with a unique email.  The problem with this method is that if a message is ever lost, then the state between New Relic and StatusPage.io will get out of sync. Also you might not want to change the status of a component until a minimum threshold of failure has occurred.
 
 By synchronizing both systems with their APIs, the states between the two will always be kept in sync, even if an alert message is never received.  It also updates states faster than email.  As soon as a violation is created it will be picked up on the next sync.  If Status Controller ever goes down, the next time it is started it will sync the statuses to their current state.
 
