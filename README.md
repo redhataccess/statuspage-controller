@@ -172,8 +172,6 @@ Example:
     var spc = new StatuspageController(config);
     spc.start();
 
-**Basic auth and SSL are required to use the API** If these are not configured or fail the API server will not be started.
-
 ## Sync vs Push
 Both New Relic and StatusPage.io have ways to automate via push.  New Relic alerts can post to a webhook, or send an email, and StatusPage.io components can be updated with a unique email.  The problem with this method is that if a message is ever lost, then the state between New Relic and StatusPage.io will get out of sync. Also you might not want to change the status of a component until a minimum threshold of failure has occurred.
 
