@@ -162,6 +162,10 @@ const StatuspageController = function (config) {
                         for (let i = 0; i < data.length; i++) {
                             const component = data[i];
                             const componentName = component.name.toLowerCase();
+                            let componentStatus = component.status;
+                            if (componentStatus) {
+                                componentStatus = componentStatus.toLowerCase();
+                            }
 
                             self._statupageComponents[componentName] = component;
 
@@ -181,18 +185,21 @@ const StatuspageController = function (config) {
                             const oldest_violation = self.oldest_violation_per_policy[componentName];
                             if (oldest_violation) {
                                 console.log("Found component matching policy name: ", component.name);
-                                console.log("Violation duration, component status: ", oldest_violation.duration, component.status);
+                                console.log("Violation duration, component status: ", oldest_violation.duration, componentStatus);
 
                                 const new_status = getStatus(oldest_violation.duration);
 
-                                if (component.status !== new_status) {
+                                if (componentStatus !== new_status) {
                                     self.executePluginsStatusChange(component, new_status, oldest_violation);
 
                                     // update status of component based on violation rules
                                     self.updateSPIOComponentStatus(component, new_status);
                                 }
                             }
-                            else if (component.status !== 'operational') {
+                            else if (componentStatus && componentStatus !== 'operational') {
+                                console.log("Changing component to operational: ", componentName);
+                                console.log("Current status: [" + componentStatus + "]");
+
                                 self.executePluginsStatusChange(component, 'operational');
 
                                 // No violation for this component so set it back to operational
@@ -289,7 +296,6 @@ const StatuspageController = function (config) {
 
     self.updateSPIOComponentStatus = function (component, status) {
         if (component && component.name && status) {
-            console.log("Setting components status: ", component.name, status);
             self.spio_patch_args.data = "component[status]=" + status;
             self.client.patch(self.spio_url + "/components/" + component.id + ".json", self.spio_patch_args,
                 function (data, response) {
