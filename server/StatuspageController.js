@@ -409,7 +409,9 @@ const StatuspageController = function (config) {
         // first validate the required configs: HTPASSWD and TLS
         if (self.validateApiConfig()) {
             try { // Create a server with a host and port
-                let options = {};
+                let options = {
+                    port: self.config.PORT,
+                };
 
                 if (self.config.DEBUG) {
                     let debugTags = ['hapi', 'error', 'debug', 'info', 'warning', 'request', 'server', 'timeout',
@@ -421,19 +423,14 @@ const StatuspageController = function (config) {
                     }
                 }
 
-                self.server = new Hapi.Server(options);
-                let connectionOptions = {
-                    port: self.config.PORT,
-                };
-
                 // optionally add ssl
                 if (self.config.TLS) {
-                    connectionOptions.tls = {
+                    options.tls = {
                         key: fs.readFileSync(self.config.TLS.key),
                         cert: fs.readFileSync(self.config.TLS.cert),
                     };
                 }
-                self.server.connection(connectionOptions);
+                self.server = new Hapi.Server(options);
 
                 let authScheme;
 
@@ -454,12 +451,12 @@ const StatuspageController = function (config) {
                 }
 
                 // route handlers
-                const readyHandler = (request, reply) => {
+                const readyHandler = (request, h) => {
                     console.log("[/ready GET] received GET request");
-                    reply("ready");
+                    return "ready";
                 };
 
-                const healthCheckHandler = (request, reply) => {
+                const healthCheckHandler = (request, h) => {
                     console.log("[/api/healthcheck.json GET] received GET request");
 
                     let res = {
@@ -467,40 +464,45 @@ const StatuspageController = function (config) {
                         ok: true,
                     };
 
-                    // check new relic connection
-                    self.getNRAlertPolicies((ok) => {
-                        if (ok) {
-                            // now check statuspage.io connection
-                            self.getStatuspageComponents((ok) => {
+                    return new Promise((resolve, reject) => {
+                        // check new relic connection
+                        self.getNRAlertPolicies((ok) => {
+                            if (ok) {
+                                // now check statuspage.io connection
+                                self.getStatuspageComponents((ok) => {
+                                    if (!ok) {
+                                        res.message = 'Trouble connecting to statuspage.io API, check your statuspage.io API key and Page Id.';
+                                        res.ok = false;
+                                    }
+
+                                    let response = h.response(res);
+                                    response.type('application/json');
+                                    resolve(response);
+                                });
+                            }
+                            else {
                                 if (!ok) {
-                                    res.message = 'Trouble connecting to statuspage.io API, check your statuspage.io API key and Page Id.';
+                                    res.message = 'Trouble connecting to New Relic API, check your New Relic API key.';
                                     res.ok = false;
                                 }
 
-                                let response = reply(res);
+                                let response = h.response(res);
                                 response.type('application/json');
-                            });
-                        }
-                        else {
-                            if (!ok) {
-                                res.message = 'Trouble connecting to New Relic API, check your New Relic API key.';
-                                res.ok = false;
+                                resolve(response);
                             }
-
-                            let response = reply(res);
-                            response.type('application/json');
-                        }
+                        });
                     });
                 };
 
-                const overridesGetHandler = (request, reply) => {
+                const overridesGetHandler = (request, h) => {
                     console.log("[/api/overrides.json GET] received GET request");
 
-                    let response = reply(self._overrides);
+                    let response = h.response(self._overrides);
                     response.type('application/json');
+                    return response;
                 };
 
-                const overridesPostHandler = (request, reply) => {
+                const overridesPostHandler = (request, h) => {
                     let override = request.payload;
 
                     console.log("[/api/overrides.json POST] ", override);
@@ -526,12 +528,13 @@ const StatuspageController = function (config) {
 
                     }
 
-                    let response = reply({
+                    let response = h.response({
                         message: "Successfully added override",
                         component_name: override.component_name,
                         seconds: override.seconds,
                     });
                     response.type('application/json');
+                    return response;
                 };
 
                 // routes
