@@ -442,7 +442,7 @@ const StatuspageController = function (config) {
                     });
 
                     // Register auth plugin.
-                    self.server.register(httpAuth.hapi());
+                    self.server.register(httpAuth.hapi()).then(() => {});
 
                     // Setup strategy.
                     self.server.auth.strategy('http-auth', 'http', authScheme);
@@ -451,7 +451,7 @@ const StatuspageController = function (config) {
                 }
 
                 // route handlers
-                const readyHandler = (request, h) => {
+                const readyHandler = () => {
                     console.log("[/ready GET] received GET request");
                     return "ready";
                 };
@@ -464,7 +464,7 @@ const StatuspageController = function (config) {
                         ok: true,
                     };
 
-                    return new Promise((resolve, reject) => {
+                    return new Promise((resolve) => {
                         // check new relic connection
                         self.getNRAlertPolicies((ok) => {
                             if (ok) {

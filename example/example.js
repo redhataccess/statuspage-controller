@@ -1,10 +1,10 @@
 const spc = require('./../server/StatuspageController.js');
-const IrcPlugin = require('./example_plugin.js');
+const PluginExample = require('./example_plugin.js');
 
 const config = {
-    NR_API_KEY: 'nrapi',
-    SPIO_PAGE_ID: 'pageid',
-    SPIO_API_KEY: 'spioapi',
+    NR_API_KEY: process.env.NR_API_KEY,
+    SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
+    SPIO_API_KEY: process.env.SPIO_API_KEY,
     POLL_INTERVAL: 10000,
     // PORT: 3000,
     // DEBUG: false,
@@ -37,10 +37,10 @@ const plugin_config = {
     ]
 };
 
-const p = new IrcPlugin(plugin_config);
+const plugin = new PluginExample(plugin_config);
 
 const spcInstance = new spc(config);
 
-spcInstance.addPlugin(p);
+spcInstance.addPlugin(plugin);
 
 spcInstance.start();
