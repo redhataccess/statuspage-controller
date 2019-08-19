@@ -1,6 +1,7 @@
 'use strict';
 
 const Client = require('node-rest-client').Client;
+const axios = require('axios');
 const _ = require('lodash');
 const Hapi = require('hapi');
 const fs = require('fs');
@@ -225,7 +226,7 @@ const StatuspageController = function (config) {
          * @param data.policies
          * @param response
          */
-        function parsePolicies(data, response) {
+        async function parsePolicies(data, response) {
             console.log("[alerts_policies] Current page: ", currentPage);
 
             if (data.policies) {
@@ -242,9 +243,18 @@ const StatuspageController = function (config) {
 
                     // recursively get and parse the next page
                     currentPage++;
-                    self.client.get(self.nr_url + "/alerts_policies.json?page=" + currentPage, self.nr_args,
-                        parsePolicies
-                    );
+                    let url = self.nr_url + "/alerts_policies.json?page=" + currentPage;
+                    self.client.get(url, self.nr_args, parsePolicies);
+
+                    // try {
+                    //     const response = await axios.get(url, self.nr_args);
+                    //     console.log("AXIOS RESPONSE ************************");
+                    //     console.log(response.data);
+                    // } catch (error) {
+                    //     console.error(error);
+                    // }
+
+
                 }
                 else {
                     console.log("NR Alert Policies total: ", Object.keys(self._alertPolicies).length);
@@ -332,7 +342,7 @@ const StatuspageController = function (config) {
      */
     self.terminator = function (sig) {
         if (typeof sig === "string") {
-            console.log('Received %s - terminating sample server ...', sig);
+            console.log('Received %s - terminating server ...', sig);
             process.exit(1);
         }
         console.log('Node server stopped.');

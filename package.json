@@ -25,6 +25,7 @@
     "url": "https://github.com/redhataccess/statuspage-controller"
   },
   "dependencies": {
+    "axios": "^0.19.0",
     "console-stamp": "^0.2.7",
     "hapi": "^18.1.0",
     "http-auth": "^3.2.3",
@@ -37,9 +38,9 @@
   },
   "bundleDependencies": [],
   "private": false,
-  "main": "server/StatuspageController.js",
+  "main": "src/StatuspageController.js",
   "scripts": {
-    "start": "node server/StatuspageController.js",
+    "start": "node src/StatuspageController.js",
     "example": "node example/example.js"
   }
 }

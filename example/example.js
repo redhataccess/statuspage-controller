@@ -1,4 +1,4 @@
-const spc = require('./../server/StatuspageController.js');
+const spc = require('../src/StatuspageController.js');
 const PluginExample = require('./example_plugin.js');
 
 const config = {
