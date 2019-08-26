@@ -6,26 +6,31 @@ const axios = require('axios');
  * Stateless New Relic rest client
  */
 class NewRelicClient {
-    constructor(apiKey) {
-        this.apiKey = apiKey;
+    constructor() {
         this.NR_API_URL = "https://api.newrelic.com/v2";
+    }
 
+    setApiKey(apiKey) {
         this.config = {
-            headers: {"X-Api-Key": this.apiKey} // request headers
+            headers: {"X-Api-Key": apiKey} // request headers
         };
     }
 
     /**
-     * Returns the list of alert policies for this account
+     * Returns the list of alert policies for a given api key
      */
-    async getAlertPolicies() {
+    async getAlertPolicies(apiKey) {
         let currentPage = 1;
         let alertPolicies = {};
         let hadResponse;
 
+        this.setApiKey(apiKey);
+
         // Iterate over the alert policy pages and collect all policies into an object to return
         do {
             try {
+                console.log('[NR Client] getAlertPolicies page', currentPage);
+
                 const url = this.NR_API_URL + "/alerts_policies.json?page=" + currentPage;
                 const response = await axios.get(url, this.config);
 
@@ -50,6 +55,8 @@ class NewRelicClient {
                 console.error(error);
             }
         } while (hadResponse);
+
+        console.log('[NR Client] Total alert policies:', Object.keys(alertPolicies).length);
 
         return alertPolicies;
     }

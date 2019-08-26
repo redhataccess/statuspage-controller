@@ -1,7 +1,6 @@
 'use strict';
 
 const Client = require('node-rest-client').Client;
-const axios = require('axios');
 const _ = require('lodash');
 const Hapi = require('hapi');
 const fs = require('fs');
@@ -59,6 +58,9 @@ const StatuspageController = function (config) {
         ]
     };
 
+    self.nrClient = new NewRelicClient();
+    self._alertPolicies = {};
+
     function getStatus(duration) {
         const rules = _.orderBy(self.config.THRESHOLDS, 'duration', 'desc');
 
@@ -75,10 +77,6 @@ const StatuspageController = function (config) {
     }
 
     async function main() {
-        let nrClient = new NewRelicClient(self.config.NR_API_KEY);
-        let ap = await nrClient.getAlertPolicies();
-
-
         // check for any open violations
         console.log("Checking for open New Relic violations...");
         let currentPage = 1;
@@ -634,7 +632,7 @@ const StatuspageController = function (config) {
         console.log("StatusPage API key: ", self.maskString(self.config.SPIO_API_KEY));
 
         // Load all the currently defined alert polices from New Relic
-        self.getNRAlertPolicies();
+        self._alertPolicies = self.nrClient.getAlertPolicies(self.config.NR_API_KEY);
 
         // Load up statuspage.io components
         self.getStatuspageComponents();
