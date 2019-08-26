@@ -7,6 +7,7 @@ const Hapi = require('hapi');
 const fs = require('fs');
 const httpAuth = require('http-auth');
 const Joi = require('joi');
+const NewRelicClient = require('./NewRelicClient');
 
 
 // Patch console.x methods in order to add timestamp information
@@ -73,7 +74,11 @@ const StatuspageController = function (config) {
         return rule.status || 'operational';
     }
 
-    function main() {
+    async function main() {
+        let nrClient = new NewRelicClient(self.config.NR_API_KEY);
+        let ap = await nrClient.getAlertPolicies();
+
+
         // check for any open violations
         console.log("Checking for open New Relic violations...");
         let currentPage = 1;
