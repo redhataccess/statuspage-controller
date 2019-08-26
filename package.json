@@ -41,6 +41,6 @@
   "main": "src/StatuspageController.js",
   "scripts": {
     "start": "node src/StatuspageController.js",
-    "example": "node example/example.js"
+    "example": "node $NODE_DEBUG_OPTION example/example.js"
   }
 }

@@ -74,85 +74,14 @@ const StatuspageController = function (config) {
     }
 
     async function main() {
-        // check for any open violations
-        console.log("Checking for open New Relic violations...");
-        let currentPage = 1;
-
-        function getViolations() {
-            self.client.get(self.nr_url + "/alerts_violations.json?only_open=true&page=" + currentPage, self.nr_args,
-                parseViolations
-            );
-        }
-
-        // reset incidents
-        self.oldest_violation_per_policy = {};
 
         // kick off process by first refreshing the NR policy list
         self.alertPolicies = await self.nrClient.getAlertPolicies(self.config.NR_API_KEY);
 
         // Get open NR violations
-        getViolations();
+        self.oldestViolationPerPolicy = await self.nrClient.getOldestViolationsPerPolicy(self.config.NR_API_KEY);
 
-        /**
-         * Recursively pages through New Relic violations and parses them, then hands off to updateSPIOComponents
-         * @param data
-         * @param data.violations
-         * @param data.violations.policy_name
-         * @param response
-         */
-        function parseViolations(data, response) {
-            console.log("[alerts_violations] Current page: ", currentPage);
-
-            if (data.violations) {
-                const violations = data.violations;
-                console.log("Violations on page: ", violations.length);
-
-                if (violations.length > 0) {
-                    // parsed response body as js object
-                    for (let i = 0; i < violations.length; i++) {
-                        const violation = violations[i];
-                        //console.log("violation: ", violation);
-                        const policy_name = violation.policy_name.toLowerCase();
-
-                        // Save the oldest violation for this policy
-                        if (self.oldest_violation_per_policy[policy_name]) {
-                            const oldest = self.oldest_violation_per_policy[policy_name];
-                            //console.log("checking if this violation is older: ", violation.duration, oldest.duration);
-                            if (violation.duration > oldest.duration) {
-                                //console.log("Setting to oldest: ", violation);
-                                self.oldest_violation_per_policy[policy_name] = violation;
-                            }
-                        }
-                        else {
-                            self.oldest_violation_per_policy[policy_name] = violation;
-                        }
-                    }
-
-                    console.log("Policies with open violations: ", Object.getOwnPropertyNames(self.oldest_violation_per_policy));
-
-                    // recursively get and parse the next page
-                    currentPage++;
-                    self.client.get(self.nr_url + "/alerts_violations.json?only_open=true&page=" + currentPage, self.nr_args,
-                        parseViolations
-                    );
-                }
-                else {
-                    const incidentCount = Object.keys(self.oldest_violation_per_policy).length;
-                    if (incidentCount > 0) {
-                        console.log("Open New Relic incidents: ", incidentCount);
-                    }
-                    else {
-                        console.log("No open New Relic incidents");
-                    }
-
-                    // Now update SPIO components based on open violations
-                    updateSPIOComponents();
-                }
-            }
-            else {
-                console.log("Invalid response from New Relic API. Status Code: " + response.statusCode);
-            }
-        }
+        updateSPIOComponents();
 
         function updateSPIOComponents() {
             console.log("Synchronizing statuspage.io components...");
@@ -186,7 +115,7 @@ const StatuspageController = function (config) {
                             }
 
                             // Component is linked and not overridden, sync status
-                            const oldest_violation = self.oldest_violation_per_policy[componentName];
+                            const oldest_violation = self.oldestViolationPerPolicy[componentName];
                             if (oldest_violation) {
                                 console.log("Found component matching policy name: ", component.name);
                                 console.log("Violation duration, component status: ", oldest_violation.duration, componentStatus);
@@ -385,7 +314,7 @@ const StatuspageController = function (config) {
             }
         };
 
-        self.oldest_violation_per_policy = {};
+        self.oldestViolationPerPolicy = {};
 
         // New Relic alert polices
         self.alertPolicies = {};
