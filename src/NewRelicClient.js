@@ -17,6 +17,16 @@ class NewRelicClient {
     }
 
     /**
+     * Returns true if the client can talk to New Relic API
+     * @param apiKey
+     * @returns {boolean}
+     */
+    async healthCheck(apiKey) {
+        //TODO: Implement
+        return true;
+    }
+
+    /**
      * Returns the list of alert policies for a given api key
      */
     async getAlertPolicies(apiKey) {

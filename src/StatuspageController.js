@@ -58,9 +58,6 @@ const StatuspageController = function (config) {
         ]
     };
 
-    self.nrClient = new NewRelicClient();
-    self._alertPolicies = {};
-
     function getStatus(duration) {
         const rules = _.orderBy(self.config.THRESHOLDS, 'duration', 'desc');
 
@@ -81,17 +78,20 @@ const StatuspageController = function (config) {
         console.log("Checking for open New Relic violations...");
         let currentPage = 1;
 
-        // reset incidents
-        self.oldest_violation_per_policy = {};
-
-        // kick off process by first refreshing the NR policy list, then getting violations
-        self.getNRAlertPolicies(getViolations);
-
         function getViolations() {
             self.client.get(self.nr_url + "/alerts_violations.json?only_open=true&page=" + currentPage, self.nr_args,
                 parseViolations
             );
         }
+
+        // reset incidents
+        self.oldest_violation_per_policy = {};
+
+        // kick off process by first refreshing the NR policy list
+        self.alertPolicies = await self.nrClient.getAlertPolicies(self.config.NR_API_KEY);
+
+        // Get open NR violations
+        getViolations();
 
         /**
          * Recursively pages through New Relic violations and parses them, then hands off to updateSPIOComponents
@@ -174,7 +174,7 @@ const StatuspageController = function (config) {
                             self._statupageComponents[componentName] = component;
 
                             // Check if this component is linked
-                            if (!self._alertPolicies[componentName]) {
+                            if (!self.alertPolicies[componentName]) {
                                 console.log('Component not linked, skipping: ', componentName);
                                 continue; // skip this component
                             }
@@ -221,7 +221,7 @@ const StatuspageController = function (config) {
 
     self.getNRAlertPolicies = function (callback) {
         let currentPage = 1;
-        self._alertPolicies = {};
+        self.alertPolicies = {};
 
         /**
          * Recursively pages through New Relic alert polices and saves them
@@ -241,26 +241,16 @@ const StatuspageController = function (config) {
                     for (let i = 0; i < policies.length; i++) {
                         const policy = policies[i];
                         const policy_name = policy.name.toLowerCase();
-                        self._alertPolicies[policy_name] = policy;
+                        self.alertPolicies[policy_name] = policy;
                     }
 
                     // recursively get and parse the next page
                     currentPage++;
                     let url = self.nr_url + "/alerts_policies.json?page=" + currentPage;
                     self.client.get(url, self.nr_args, parsePolicies);
-
-                    // try {
-                    //     const response = await axios.get(url, self.nr_args);
-                    //     console.log("AXIOS RESPONSE ************************");
-                    //     console.log(response.data);
-                    // } catch (error) {
-                    //     console.error(error);
-                    // }
-
-
                 }
                 else {
-                    console.log("NR Alert Policies total: ", Object.keys(self._alertPolicies).length);
+                    console.log("NR Alert Policies total: ", Object.keys(self.alertPolicies).length);
                     if (typeof callback === 'function') {
                         callback(true);
                     }
@@ -398,7 +388,10 @@ const StatuspageController = function (config) {
         self.oldest_violation_per_policy = {};
 
         // New Relic alert polices
-        self._alertPolicies = {};
+        self.alertPolicies = {};
+
+        // New Relic API client
+        self.nrClient = new NewRelicClient();
 
         // Statuspage.io components
         self._statupageComponents = {};
@@ -615,7 +608,7 @@ const StatuspageController = function (config) {
     /**
      *  Start the server
      */
-    self.start = function () {
+    self.start = async function () {
         if (!self.config.NR_API_KEY || !self.config.SPIO_PAGE_ID || !self.config.SPIO_API_KEY) {
             console.error("You are missing required API keys, make sure the following environment variables are set:");
             console.error("NR_API_KEY - Your New Relic API key");
@@ -632,7 +625,7 @@ const StatuspageController = function (config) {
         console.log("StatusPage API key: ", self.maskString(self.config.SPIO_API_KEY));
 
         // Load all the currently defined alert polices from New Relic
-        self._alertPolicies = self.nrClient.getAlertPolicies(self.config.NR_API_KEY);
+        self.alertPolicies = await self.nrClient.getAlertPolicies(self.config.NR_API_KEY);
 
         // Load up statuspage.io components
         self.getStatuspageComponents();
