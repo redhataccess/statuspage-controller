@@ -21,9 +21,19 @@ class NewRelicClient {
      * @param apiKey
      * @returns {boolean}
      */
-    async healthCheck(apiKey) {
-        //TODO: Implement
-        return true;
+    async checkNewRelicAPI(apiKey) {
+        this.setApiKey(apiKey);
+        const url = this.NR_API_URL + "/alerts_policies.json?page=1";
+
+        const response = await axios.get(url, this.config);
+
+        if (response.status === 200) {
+            console.log('[NR Client] New Relic API health check successful.');
+            return true;
+        } else {
+            console.error('[NR Client] New Relic API check failed, response code:', response.status);
+            return false
+        }
     }
 
     /**
@@ -44,21 +54,28 @@ class NewRelicClient {
                 const url = this.NR_API_URL + "/alerts_policies.json?page=" + currentPage;
                 const response = await axios.get(url, this.config);
 
-                if (response.data.policies.length > 0) {
-                    let policies = response.data.policies;
+                if (response.status === 200) {
+                    if (response.data.policies.length > 0) {
+                        let policies = response.data.policies;
 
-                    // parsed response body as js object
-                    for (let i = 0; i < policies.length; i++) {
-                        const policy = policies[i];
-                        const policy_name = policy.name.toLowerCase();
-                        alertPolicies[policy_name] = policy;
+                        // parsed response body as js object
+                        for (let i = 0; i < policies.length; i++) {
+                            const policy = policies[i];
+                            const policy_name = policy.name.toLowerCase();
+                            alertPolicies[policy_name] = policy;
+                        }
+
+                        // Try the next page
+                        currentPage++;
+                        hadResponse = true;
                     }
-
-                    // Try the next page
-                    currentPage++;
-                    hadResponse = true;
+                    else {
+                        hadResponse = false;
+                    }
                 }
                 else {
+                    //TODO: Can remove this
+                    console.log("Invalid response from New Relic API. Status Code: " + response.status);
                     hadResponse = false;
                 }
             } catch (error) {
@@ -126,6 +143,7 @@ class NewRelicClient {
                     }
                 }
                 else {
+                    //TODO: Can remove this
                     console.log("Invalid response from New Relic API. Status Code: " + response.status);
                     hadResponse = false;
                 }

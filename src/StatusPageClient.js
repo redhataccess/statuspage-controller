@@ -49,6 +49,7 @@ class StatusPageClient {
                 }
             }
             else {
+                //TODO: Can remove this
                 console.log("[SP Client] Invalid response from statuspage.io API. Status code: " + response.status);
             }
         } catch (error) {
@@ -69,6 +70,7 @@ class StatusPageClient {
                 console.log("[SP Client] Status updated successfully for component: ", component.name, status);
             }
             else {
+                //TODO: Replace this with try/catch block
                 console.error("[SP Client] Error updating status for component: ", component.name, status, response.status);
             }
         }

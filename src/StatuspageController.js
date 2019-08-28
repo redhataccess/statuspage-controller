@@ -384,42 +384,54 @@ const StatuspageController = function (config) {
                     return "ready";
                 };
 
-                const healthCheckHandler = (request, h) => {
+                const healthCheckHandler = async (request, h) => {
                     console.log("[/api/healthcheck.json GET] received GET request");
 
-                    let res = {
-                        message: 'New Relic and statuspage.io connections established.',
-                        ok: true,
-                    };
+                    let res = {};
 
-                    return new Promise((resolve) => {
-                        // check new relic connection
-                        self.getNRAlertPolicies((ok) => {
-                            if (ok) {
-                                // now check statuspage.io connection
-                                self.getStatuspageComponents((ok) => {
-                                    if (!ok) {
-                                        res.message = 'Trouble connecting to statuspage.io API, check your statuspage.io API key and Page Id.';
-                                        res.ok = false;
-                                    }
+                    let isSuccess = await self.nrClient.checkNewRelicAPI(self.config.NR_API_KEY);
+                    if (isSuccess) {
+                        res.message = 'New Relic and statuspage.io connections established.';
+                        res.ok = true;
+                    }
+                    else {
+                        res.message = 'Trouble connecting to New Relic API, check your New Relic API key.';
+                        res.ok = false;
+                    }
 
-                                    let response = h.response(res);
-                                    response.type('application/json');
-                                    resolve(response);
-                                });
-                            }
-                            else {
-                                if (!ok) {
-                                    res.message = 'Trouble connecting to New Relic API, check your New Relic API key.';
-                                    res.ok = false;
-                                }
+                    let response = h.response(res);
+                    response.type('application/json');
 
-                                let response = h.response(res);
-                                response.type('application/json');
-                                resolve(response);
-                            }
-                        });
-                    });
+                    return response;
+
+                    // return new Promise((resolve) => {
+                    //     // check new relic connection
+                    //     self.getNRAlertPolicies((ok) => {
+                    //         if (ok) {
+                    //             // now check statuspage.io connection
+                    //             self.getStatuspageComponents((ok) => {
+                    //                 if (!ok) {
+                    //                     res.message = 'Trouble connecting to statuspage.io API, check your statuspage.io API key and Page Id.';
+                    //                     res.ok = false;
+                    //                 }
+                    //
+                    //                 let response = h.response(res);
+                    //                 response.type('application/json');
+                    //                 resolve(response);
+                    //             });
+                    //         }
+                    //         else {
+                    //             if (!ok) {
+                    //                 res.message = 'Trouble connecting to New Relic API, check your New Relic API key.';
+                    //                 res.ok = false;
+                    //             }
+                    //
+                    //             let response = h.response(res);
+                    //             response.type('application/json');
+                    //             resolve(response);
+                    //         }
+                    //     });
+                    // });
                 };
 
                 const overridesGetHandler = (request, h) => {
