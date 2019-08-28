@@ -86,7 +86,7 @@ const StatuspageController = function (config) {
         syncStatusPageComponents();
     }
 
-    function syncStatusPageComponents() {
+    async function syncStatusPageComponents() {
         console.log("[main] Synchronizing statuspage.io components...");
 
         const keys = Object.keys(self.statupageComponents);
@@ -123,7 +123,7 @@ const StatuspageController = function (config) {
                     self.executePluginsStatusChange(component, new_status, oldest_violation);
 
                     // update status of component based on violation rules
-                    self.updateSPIOComponentStatus(component, new_status);
+                    await self.spClient.updateComponentStatus(component, new_status);
                 }
             }
             else if (componentStatus && componentStatus !== 'operational') {
@@ -133,7 +133,7 @@ const StatuspageController = function (config) {
                 self.executePluginsStatusChange(component, 'operational');
 
                 // No violation for this component so set it back to operational
-                self.updateSPIOComponentStatus(component, 'operational');
+                await self.spClient.updateComponentStatus(component, 'operational');
             }
         }
     }
@@ -430,7 +430,7 @@ const StatuspageController = function (config) {
                     return response;
                 };
 
-                const overridesPostHandler = (request, h) => {
+                const overridesPostHandler = async (request, h) => {
                     let override = request.payload;
 
                     console.log("[/api/overrides.json POST] ", override);
@@ -448,7 +448,7 @@ const StatuspageController = function (config) {
                     if (override.new_status) {
                         let statupageComponent = self.statupageComponents[componentName];
                         if (statupageComponent) {
-                            self.updateSPIOComponentStatus(statupageComponent, override.new_status);
+                            await self.spClient.updateComponentStatus(statupageComponent, override.new_status);
                         }
                         else {
                             console.error('[overridesPostHandler] tried to set new status on undefined component:', componentName, override.new_status);

@@ -57,6 +57,22 @@ class StatusPageClient {
 
         return statusPageComponents;
     }
+
+    async updateComponentStatus(component, status) {
+        if (component && component.name && status) {
+            const patchData = "component[status]=" + status;
+            let url = this.SP_API_URL + "/components/" + component.id + ".json";
+
+            const response = await axios.patch(url, patchData, this.config);
+
+            if (response.status === 200) {
+                console.log("[SP Client] Status updated successfully for component: ", component.name, status);
+            }
+            else {
+                console.error("[SP Client] Error updating status for component: ", component.name, status, response.status);
+            }
+        }
+    }
 }
 
 module.exports = StatusPageClient;
