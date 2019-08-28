@@ -75,7 +75,6 @@ const StatuspageController = function (config) {
     }
 
     async function main() {
-
         // kick off process by first refreshing the NR policy list and status page components
         self.alertPolicies = await self.nrClient.getAlertPolicies(self.config.NR_API_KEY);
         self.statupageComponents = await self.spClient.getStatusPageComponents();
@@ -83,70 +82,59 @@ const StatuspageController = function (config) {
         // Get open NR violations
         self.oldestViolationPerPolicy = await self.nrClient.getOldestViolationsPerPolicy(self.config.NR_API_KEY);
 
-        updateSPIOComponents();
+        // Synchronize status page components based on NR incidents
+        syncStatusPageComponents();
+    }
 
-        function updateSPIOComponents() {
-            console.log("Synchronizing statuspage.io components...");
+    function syncStatusPageComponents() {
+        console.log("[main] Synchronizing statuspage.io components...");
 
-            // now update the statuspage.io component based on any matching policy-components names
-            self.client.get(self.spio_url + "/components.json", self.spio_get_args,
-                function (data, response) {
-                    if (response.statusCode === 200) {
-                        self.statupageComponents = {}; // refresh component list
+        const keys = Object.keys(self.statupageComponents);
 
-                        for (let i = 0; i < data.length; i++) {
-                            const component = data[i];
-                            const componentName = component.name.toLowerCase();
-                            let componentStatus = component.status;
-                            if (componentStatus) {
-                                componentStatus = componentStatus.toLowerCase();
-                            }
+        for (let i = 0; i < keys.length; i++) {
+            const component = self.statupageComponents[keys[i]];
+            const componentName = component.name.toLowerCase();
+            let componentStatus = component.status;
+            if (componentStatus) {
+                componentStatus = componentStatus.toLowerCase();
+            }
 
-                            self.statupageComponents[componentName] = component;
+            // Check if this component is linked
+            if (!self.alertPolicies[componentName]) {
+                console.log('Component not linked, skipping: ', componentName);
+                continue; // skip this component
+            }
 
-                            // Check if this component is linked
-                            if (!self.alertPolicies[componentName]) {
-                                console.log('Component not linked, skipping: ', componentName);
-                                continue; // skip this component
-                            }
+            // Check if this component is overridden
+            if (self._overrides[componentName]) {
+                console.log('Component is currently overridden, skipping: ', componentName, self._overrides[componentName]);
+                continue; // skip this component
+            }
 
-                            // Check if this component is overridden
-                            if (self._overrides[componentName]) {
-                                console.log('Component is currently overridden, skipping: ', componentName, self._overrides[componentName]);
-                                continue; // skip this component
-                            }
+            // Component is linked and not overridden, sync status
+            const oldest_violation = self.oldestViolationPerPolicy[componentName];
+            if (oldest_violation) {
+                console.log("Found component matching policy name: ", component.name);
+                console.log("Violation duration, component status: ", oldest_violation.duration, componentStatus);
 
-                            // Component is linked and not overridden, sync status
-                            const oldest_violation = self.oldestViolationPerPolicy[componentName];
-                            if (oldest_violation) {
-                                console.log("Found component matching policy name: ", component.name);
-                                console.log("Violation duration, component status: ", oldest_violation.duration, componentStatus);
+                const new_status = getStatus(oldest_violation.duration);
 
-                                const new_status = getStatus(oldest_violation.duration);
+                if (componentStatus !== new_status) {
+                    self.executePluginsStatusChange(component, new_status, oldest_violation);
 
-                                if (componentStatus !== new_status) {
-                                    self.executePluginsStatusChange(component, new_status, oldest_violation);
-
-                                    // update status of component based on violation rules
-                                    self.updateSPIOComponentStatus(component, new_status);
-                                }
-                            }
-                            else if (componentStatus && componentStatus !== 'operational') {
-                                console.log("Changing component to operational: ", componentName);
-                                console.log("Current status: [" + componentStatus + "]");
-
-                                self.executePluginsStatusChange(component, 'operational');
-
-                                // No violation for this component so set it back to operational
-                                self.updateSPIOComponentStatus(component, 'operational');
-                            }
-                        }
-                    }
-                    else {
-                        console.log("Invalid response from statuspage.io API. Status code: " + response.statusCode);
-                    }
+                    // update status of component based on violation rules
+                    self.updateSPIOComponentStatus(component, new_status);
                 }
-            );
+            }
+            else if (componentStatus && componentStatus !== 'operational') {
+                console.log("Changing component to operational: ", componentName);
+                console.log("Current status: [" + componentStatus + "]");
+
+                self.executePluginsStatusChange(component, 'operational');
+
+                // No violation for this component so set it back to operational
+                self.updateSPIOComponentStatus(component, 'operational');
+            }
         }
     }
 
