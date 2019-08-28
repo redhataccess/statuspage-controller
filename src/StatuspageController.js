@@ -76,8 +76,9 @@ const StatuspageController = function (config) {
 
     async function main() {
 
-        // kick off process by first refreshing the NR policy list
+        // kick off process by first refreshing the NR policy list and status page components
         self.alertPolicies = await self.nrClient.getAlertPolicies(self.config.NR_API_KEY);
+        self.statupageComponents = await self.spClient.getStatusPageComponents();
 
         // Get open NR violations
         self.oldestViolationPerPolicy = await self.nrClient.getOldestViolationsPerPolicy(self.config.NR_API_KEY);
@@ -557,13 +558,8 @@ const StatuspageController = function (config) {
         console.log("StatusPage Page ID: ", self.maskString(self.config.SPIO_PAGE_ID));
         console.log("StatusPage API key: ", self.maskString(self.config.SPIO_API_KEY));
 
-        // Load all the currently defined alert polices from New Relic
-        self.alertPolicies = await self.nrClient.getAlertPolicies(self.config.NR_API_KEY);
-
-        // Load up statuspage.io components
-        self.statupageComponents = await self.spClient.getStatusPageComponents();
-
         // Start synchronizing
+        await main();
         setInterval(main, self.config.POLL_INTERVAL);
 
         if (self.apiInitialized) {
