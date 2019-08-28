@@ -7,6 +7,7 @@ const fs = require('fs');
 const httpAuth = require('http-auth');
 const Joi = require('joi');
 const NewRelicClient = require('./NewRelicClient');
+const StatusPageClient = require('./StatusPageClient');
 
 
 // Patch console.x methods in order to add timestamp information
@@ -90,7 +91,7 @@ const StatuspageController = function (config) {
             self.client.get(self.spio_url + "/components.json", self.spio_get_args,
                 function (data, response) {
                     if (response.statusCode === 200) {
-                        self._statupageComponents = {}; // refresh component list
+                        self.statupageComponents = {}; // refresh component list
 
                         for (let i = 0; i < data.length; i++) {
                             const component = data[i];
@@ -100,7 +101,7 @@ const StatuspageController = function (config) {
                                 componentStatus = componentStatus.toLowerCase();
                             }
 
-                            self._statupageComponents[componentName] = component;
+                            self.statupageComponents[componentName] = component;
 
                             // Check if this component is linked
                             if (!self.alertPolicies[componentName]) {
@@ -209,7 +210,7 @@ const StatuspageController = function (config) {
                         const component = data[i];
                         const componentName = component.name.toLowerCase();
 
-                        self._statupageComponents[componentName] = component;
+                        self.statupageComponents[componentName] = component;
                     }
 
                     if (typeof callback === 'function') {
@@ -217,7 +218,7 @@ const StatuspageController = function (config) {
                     }
                 }
                 else {
-                    console.log("[getStatuspageComponents] Invalid response from statuspage.io API. Status code: " + response.statusCode);
+                    console.log("[getStatusPageComponents] Invalid response from statuspage.io API. Status code: " + response.statusCode);
                     if (typeof callback === 'function') {
                         callback(false); // unsuccessful
                     }
@@ -322,8 +323,11 @@ const StatuspageController = function (config) {
         // New Relic API client
         self.nrClient = new NewRelicClient();
 
+        // Status page API client
+        self.spClient = new StatusPageClient(self.config.SPIO_PAGE_ID, self.config.SPIO_API_KEY);
+
         // Statuspage.io components
-        self._statupageComponents = {};
+        self.statupageComponents = {};
 
         // Registered plugins
         self._plugins = [];
@@ -453,7 +457,7 @@ const StatuspageController = function (config) {
 
                     // Also optionally set the new status in statuspage.io
                     if (override.new_status) {
-                        let statupageComponent = self._statupageComponents[componentName];
+                        let statupageComponent = self.statupageComponents[componentName];
                         if (statupageComponent) {
                             self.updateSPIOComponentStatus(statupageComponent, override.new_status);
                         }
@@ -557,7 +561,7 @@ const StatuspageController = function (config) {
         self.alertPolicies = await self.nrClient.getAlertPolicies(self.config.NR_API_KEY);
 
         // Load up statuspage.io components
-        self.getStatuspageComponents();
+        self.statupageComponents = await self.spClient.getStatusPageComponents();
 
         // Start synchronizing
         setInterval(main, self.config.POLL_INTERVAL);
