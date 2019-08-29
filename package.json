@@ -30,8 +30,7 @@
     "hapi": "^18.1.0",
     "http-auth": "^3.2.3",
     "joi": "^14.3.1",
-    "lodash": "^4.17.15",
-    "node-rest-client": "^3.1.0"
+    "lodash": "^4.17.15"
   },
   "devDependencies": {
     "vulcanize": "^1.15.4"

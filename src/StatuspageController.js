@@ -1,6 +1,5 @@
 'use strict';
 
-const Client = require('node-rest-client').Client;
 const _ = require('lodash');
 const Hapi = require('hapi');
 const fs = require('fs');
@@ -138,100 +137,6 @@ const StatuspageController = function (config) {
         }
     }
 
-    self.getNRAlertPolicies = function (callback) {
-        let currentPage = 1;
-        self.alertPolicies = {};
-
-        /**
-         * Recursively pages through New Relic alert polices and saves them
-         * @param data
-         * @param data.policies
-         * @param response
-         */
-        async function parsePolicies(data, response) {
-            console.log("[alerts_policies] Current page: ", currentPage);
-
-            if (data.policies) {
-                let policies = data.policies;
-
-
-                if (policies.length > 0) {
-                    // parsed response body as js object
-                    for (let i = 0; i < policies.length; i++) {
-                        const policy = policies[i];
-                        const policy_name = policy.name.toLowerCase();
-                        self.alertPolicies[policy_name] = policy;
-                    }
-
-                    // recursively get and parse the next page
-                    currentPage++;
-                    let url = self.nr_url + "/alerts_policies.json?page=" + currentPage;
-                    self.client.get(url, self.nr_args, parsePolicies);
-                }
-                else {
-                    console.log("NR Alert Policies total: ", Object.keys(self.alertPolicies).length);
-                    if (typeof callback === 'function') {
-                        callback(true);
-                    }
-                }
-            }
-            else {
-                console.log("Invalid response from New Relic API. Status Code: " + response.statusCode);
-                if (typeof callback === 'function') {
-                    callback(false);
-                }
-            }
-        }
-
-        self.client.get(self.nr_url + "/alerts_policies.json?page=" + currentPage, self.nr_args,
-            parsePolicies
-        );
-    };
-
-    self.getStatuspageComponents = function (callback) {
-        // now update the statuspage.io component based on any matching policy-components names
-        self.client.get(self.spio_url + "/components.json", self.spio_get_args,
-            function (data, response) {
-                if (response.statusCode === 200) {
-                    console.log("Statuspage.io components: ", data.length);
-
-                    for (let i = 0; i < data.length; i++) {
-                        const component = data[i];
-                        const componentName = component.name.toLowerCase();
-
-                        self.statupageComponents[componentName] = component;
-                    }
-
-                    if (typeof callback === 'function') {
-                        callback(true); // successful
-                    }
-                }
-                else {
-                    console.log("[getStatusPageComponents] Invalid response from statuspage.io API. Status code: " + response.statusCode);
-                    if (typeof callback === 'function') {
-                        callback(false); // unsuccessful
-                    }
-                }
-            }
-        );
-    };
-
-    self.updateSPIOComponentStatus = function (component, status) {
-        if (component && component.name && status) {
-            self.spio_patch_args.data = "component[status]=" + status;
-            self.client.patch(self.spio_url + "/components/" + component.id + ".json", self.spio_patch_args,
-                function (data, response) {
-                    if (response.statusCode === 200) {
-                        console.log("Status updated successfully for component: ", component.name, status);
-                    }
-                    else {
-                        console.error("Error updating status for component: ", component.name, status, response.statusCode);
-                    }
-                }
-            );
-        }
-    };
-
     /**
      * Execute all plugin status change functions
      * @param component Status page component being updated
@@ -285,7 +190,6 @@ const StatuspageController = function (config) {
 
 
     self.initializeVariables = function () {
-        self.client = new Client();
         self.nr_url = "https://api.newrelic.com/v2";
         self.spio_url = "https://api.statuspage.io/v1/pages/" + self.config.SPIO_PAGE_ID;
 
