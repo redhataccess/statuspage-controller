@@ -25,13 +25,12 @@ class NewRelicClient {
         this.setApiKey(apiKey);
         const url = this.NR_API_URL + "/alerts_policies.json?page=1";
 
-        const response = await axios.get(url, this.config);
-
-        if (response.status === 200) {
-            console.log('[NR Client] New Relic API health check successful.');
+        try {
+            await axios.get(url, this.config);
+            console.log('[NR Client] New Relic API health check successful');
             return true;
-        } else {
-            console.error('[NR Client] New Relic API check failed, response code:', response.status);
+        } catch (e) {
+            console.error('[NR Client] New Relic API check failed, response code:', e.response.status, e.response.statusText);
             return false
         }
     }
