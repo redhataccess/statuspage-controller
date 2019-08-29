@@ -18,9 +18,17 @@ class StatusPageClient {
      * Returns true if the client can talk to Status Page API
      * @returns {boolean}
      */
-    async healthCheck() {
-        //TODO: Implement
-        return true;
+    async checkStatusPageAPI() {
+        const url = this.SP_API_URL + "/components.json";
+
+        try {
+            await axios.get(url, this.config);
+            console.log('[SP Client] Status Page API health check successful');
+            return true;
+        } catch (e) {
+            console.error('[SP Client] Status Page API check failed, response code:', e.response.status, e.response.statusText);
+            return false
+        }
     }
 
     /**
