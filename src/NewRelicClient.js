@@ -56,10 +56,38 @@ class NewRelicClient {
         }
     }
 
+    async getAlertPolicies(apiKey) {
+        let alertPolicies = {};
+
+        // see if this is an array or a string
+        if (Array.isArray(apiKey)) {
+            alertPolicies = await this._getAlertPoliciesSingleMulti(apiKey);
+        }
+        else {
+            alertPolicies = await this._getAlertPoliciesSingle(apiKey);
+        }
+
+        console.log('[NR Client] Total alert policies:', Object.keys(alertPolicies).length);
+
+        return alertPolicies;
+    }
+
+    async _getAlertPoliciesSingleMulti(apiKeysArray) {
+        let alertPolicies = {};
+
+        // Union all the policies together for each api key
+        for(let apiKey of apiKeysArray) {
+            let policies = await this._getAlertPoliciesSingle(apiKey);
+            Object.assign(alertPolicies, policies);
+        }
+
+        return alertPolicies;
+    }
+
     /**
      * Returns the list of alert policies for a given api key
      */
-    async getAlertPolicies(apiKey) {
+    async _getAlertPoliciesSingle(apiKey) {
         let currentPage = 1;
         let alertPolicies = {};
         let hadResponse;
@@ -103,7 +131,7 @@ class NewRelicClient {
             }
         } while (hadResponse);
 
-        console.log('[NR Client] Total alert policies:', Object.keys(alertPolicies).length);
+        console.log('[NR Client] policies:', Object.keys(alertPolicies).length);
 
         return alertPolicies;
     }
