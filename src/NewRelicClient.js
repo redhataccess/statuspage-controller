@@ -18,10 +18,31 @@ class NewRelicClient {
 
     /**
      * Returns true if the client can talk to New Relic API
-     * @param apiKey
+     * @param apiKey Can be a single api key string or an array of keys
      * @returns {boolean}
      */
     async checkNewRelicAPI(apiKey) {
+        // see if this is an array or a string
+        if (Array.isArray(apiKey)) {
+            return this._checkNewRelicAPIMulti(apiKey);
+        }
+        else {
+            return this._checkNewRelicAPISingle(apiKey);
+        }
+    }
+
+    async _checkNewRelicAPIMulti(apiKeysArray) {
+        let isNRSuccess = false;
+
+        for(let apiKey of apiKeysArray) {
+            isNRSuccess = await this._checkNewRelicAPISingle(apiKey);
+            if (!isNRSuccess) break;
+        }
+
+        return isNRSuccess;
+    }
+
+    async _checkNewRelicAPISingle(apiKey) {
         this.setApiKey(apiKey);
         const url = this.NR_API_URL + "/alerts_policies.json?page=1";
 

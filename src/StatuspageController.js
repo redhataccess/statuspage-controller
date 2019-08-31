@@ -414,13 +414,17 @@ const StatuspageController = function (config) {
         console.log("Starting StatuspageController with the following config:");
         console.log("poll interval: ", self.config.POLL_INTERVAL);
         console.log("Port: ", self.config.PORT);
-        console.log("New Relic API key: ", self.maskString(self.config.NR_API_KEYS));
+        let maskedNewRelicAPIKeys = '';
+        for (let apiKey of self.config.NR_API_KEYS) {
+            maskedNewRelicAPIKeys += self.maskString(apiKey) + ', ';
+        }
+        console.log("New Relic API keys: ", `[${maskedNewRelicAPIKeys}]`);
         console.log("StatusPage Page ID: ", self.maskString(self.config.SPIO_PAGE_ID));
         console.log("StatusPage API key: ", self.maskString(self.config.SPIO_API_KEY));
 
         // Start synchronizing
-        await main();
-        setInterval(main, self.config.POLL_INTERVAL);
+        // await main();
+        // setInterval(main, self.config.POLL_INTERVAL);
 
         if (self.apiInitialized) {
             // Start the server
