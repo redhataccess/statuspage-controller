@@ -20,9 +20,9 @@ If a New Relic incident is created for the "Downloads" policy, status page contr
 "Downloads" component in Statuspage.io.
 
 ### Component Groups
-Component groups are mapped by namespacing the New Relic alert policy with the following convention: "group-component"
+Component groups are mapped by namespacing the New Relic alert policy with the following convention: 
 
-If you have a compontent group in status page for access.redhat.com with a sub-component of Downloads, you would need to name your New Relic alert policy name "access.redhat.com-Downloads"
+    "group-component"
 
 Example mapping of component groups on status.redhat.com:
     
