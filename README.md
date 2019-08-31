@@ -35,7 +35,7 @@ NOTE: the above can be configured, see below.
     spc.start();
       
 This usage will use all config defaults and expect the following environment variables to be set in order to work:
-* NR_API_KEY - Your New Relic API key
+* NR_API_KEYS - Your New Relic API key(s)
 * SPIO_PAGE_ID - Your Statuspage.io Page ID
 * SPIO_API_KEY - Your Statuspage.io API key
 
@@ -45,7 +45,7 @@ This usage will use all config defaults and expect the following environment var
     var config = {
         POLL_INTERVAL: 10000,
         PORT: 8080,
-        NR_API_KEY: process.env.NR_API_KEY,
+        NR_API_KEYS: process.env.NR_API_KEYS,
         SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
         SPIO_API_KEY: process.env.SPIO_API_KEY,
     };
@@ -57,7 +57,7 @@ This usage will use all config defaults and expect the following environment var
     var config = {
         POLL_INTERVAL: 10000,
         PORT: 8080,
-        NR_API_KEY: process.env.NR_API_KEY,
+        NR_API_KEYS: process.env.NR_API_KEYS,
         SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
         SPIO_API_KEY: process.env.SPIO_API_KEY,
         THRESHOLDS: [
@@ -170,7 +170,7 @@ Here is an example with all optional config options set:
         POLL_INTERVAL: 10000,
         PORT: 8080,
         DEBUG: false,
-        NR_API_KEY: process.env.NR_API_KEY,
+        NR_API_KEYS: process.env.NR_API_KEYS,
         SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
         SPIO_API_KEY: process.env.SPIO_API_KEY,
         HTPASSWD_FILE: '/path/to/users.htpasswd',

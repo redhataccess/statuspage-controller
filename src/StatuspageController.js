@@ -15,7 +15,7 @@ require("console-stamp")(console, {pattern: "mm/dd/yyyy HH:MM:ss.l"});
  * Statuspage Controller automates actions on a statuspage.io status page based on New Relic Alerts
  *
  * NOTE: If you don't provide api keys will attempt to sue these environment variables:
- *    NR_API_KEY    // New Relic API Key
+ *    NR_API_KEYS   // New Relic API Key(s)
  *    SPIO_API_KEY  // statuspage.io API Key
  *    SPIO_PAGE_ID  // statuspage.io Page ID
  *
@@ -36,7 +36,7 @@ const StatuspageController = function (config) {
         DEBUG:         config.DEBUG              || false,
         POLL_INTERVAL: process.env.POLL_INTERVAL || config.POLL_INTERVAL || 30000,
         PORT:          process.env.PORT          || config.PORT          || 8080,
-        NR_API_KEY:    process.env.NR_API_KEY    || config.NR_API_KEY,
+        NR_API_KEYS:   process.env.NR_API_KEYS   || config.NR_API_KEYS,
         SPIO_PAGE_ID:  process.env.SPIO_PAGE_ID  || config.SPIO_PAGE_ID,
         SPIO_API_KEY:  process.env.SPIO_API_KEY  || config.SPIO_API_KEY,
         HTPASSWD_FILE: process.env.HTPASSWD_FILE || config.HTPASSWD_FILE,
@@ -74,11 +74,11 @@ const StatuspageController = function (config) {
 
     async function main() {
         // kick off process by first refreshing the NR policy list and status page components
-        self.alertPolicies = await self.nrClient.getAlertPolicies(self.config.NR_API_KEY);
+        self.alertPolicies = await self.nrClient.getAlertPolicies(self.config.NR_API_KEYS);
         self.statupageComponents = await self.spClient.getStatusPageComponents();
 
         // Get open NR violations
-        self.oldestViolationPerPolicy = await self.nrClient.getOldestViolationsPerPolicy(self.config.NR_API_KEY);
+        self.oldestViolationPerPolicy = await self.nrClient.getOldestViolationsPerPolicy(self.config.NR_API_KEYS);
 
         // Synchronize status page components based on NR incidents
         await syncStatusPageComponents();
@@ -273,7 +273,7 @@ const StatuspageController = function (config) {
 
                     let res = {};
 
-                    const isNRSuccess = await self.nrClient.checkNewRelicAPI(self.config.NR_API_KEY);
+                    const isNRSuccess = await self.nrClient.checkNewRelicAPI(self.config.NR_API_KEYS);
                     const isSPSuccess = await self.spClient.checkStatusPageAPI();
 
                     if (isNRSuccess && isSPSuccess) {
@@ -403,9 +403,9 @@ const StatuspageController = function (config) {
      *  Start the server
      */
     self.start = async function () {
-        if (!self.config.NR_API_KEY || !self.config.SPIO_PAGE_ID || !self.config.SPIO_API_KEY) {
+        if (!self.config.NR_API_KEYS || !self.config.SPIO_PAGE_ID || !self.config.SPIO_API_KEY) {
             console.error("You are missing required API keys, make sure the following environment variables are set:");
-            console.error("NR_API_KEY - Your New Relic API key");
+            console.error("NR_API_KEYS - Your New Relic API key");
             console.error("SPIO_PAGE_ID - Your Statuspage.io Page ID");
             console.error("SPIO_API_KEY - Your Statuspage.io API key");
             return;
@@ -414,7 +414,7 @@ const StatuspageController = function (config) {
         console.log("Starting StatuspageController with the following config:");
         console.log("poll interval: ", self.config.POLL_INTERVAL);
         console.log("Port: ", self.config.PORT);
-        console.log("New Relic API key: ", self.maskString(self.config.NR_API_KEY));
+        console.log("New Relic API key: ", self.maskString(self.config.NR_API_KEYS));
         console.log("StatusPage Page ID: ", self.maskString(self.config.SPIO_PAGE_ID));
         console.log("StatusPage API key: ", self.maskString(self.config.SPIO_API_KEY));
 
