@@ -35,7 +35,7 @@ NOTE: the above can be configured, see below.
     spc.start();
       
 This usage will use all config defaults and expect the following environment variables to be set in order to work:
-* NR_API_KEYS - Your New Relic API key(s)
+* NR_API_KEYS - Your New Relic API key(s), this can be a single key or comma separated list of keys
 * SPIO_PAGE_ID - Your Statuspage.io Page ID
 * SPIO_API_KEY - Your Statuspage.io API key
 
