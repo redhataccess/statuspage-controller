@@ -2,7 +2,7 @@ const spc = require('../src/StatuspageController.js');
 const PluginExample = require('./example_plugin.js');
 
 const config = {
-    NR_API_KEY: process.env.NR_API_KEY,
+    NR_API_KEYS: process.env.NR_API_KEYS,
     SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
     SPIO_API_KEY: process.env.SPIO_API_KEY,
     POLL_INTERVAL: 10000,

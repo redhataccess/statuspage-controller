@@ -28,6 +28,12 @@ const StatuspageController = function (config) {
 
     config = config || {};
 
+    // Initialize value for NR_API_KEYS it needs to be an array in the end even if only 1 element
+    let nr_api_keys = process.env.NR_API_KEYS || config.NR_API_KEYS;
+    if (typeof nr_api_keys === 'string') {
+        nr_api_keys = nr_api_keys.split(',');
+    }
+
     /**
      * Configuration settings.
      * @type {{}}
@@ -36,7 +42,7 @@ const StatuspageController = function (config) {
         DEBUG:         config.DEBUG              || false,
         POLL_INTERVAL: process.env.POLL_INTERVAL || config.POLL_INTERVAL || 30000,
         PORT:          process.env.PORT          || config.PORT          || 8080,
-        NR_API_KEYS:   process.env.NR_API_KEYS   || config.NR_API_KEYS,
+        NR_API_KEYS:   nr_api_keys,
         SPIO_PAGE_ID:  process.env.SPIO_PAGE_ID  || config.SPIO_PAGE_ID,
         SPIO_API_KEY:  process.env.SPIO_API_KEY  || config.SPIO_API_KEY,
         HTPASSWD_FILE: process.env.HTPASSWD_FILE || config.HTPASSWD_FILE,

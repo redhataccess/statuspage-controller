@@ -35,7 +35,7 @@ class NewRelicClient {
         let isNRSuccess = false;
 
         for(let apiKey of apiKeysArray) {
-            isNRSuccess = await this._checkNewRelicAPISingle(apiKey);
+            isNRSuccess = await this._checkNewRelicAPISingle(apiKey.trim());
             if (!isNRSuccess) break;
         }
 
@@ -77,7 +77,7 @@ class NewRelicClient {
 
         // Union all the policies together for each api key
         for(let apiKey of apiKeysArray) {
-            let policies = await this._getAlertPoliciesSingle(apiKey);
+            let policies = await this._getAlertPoliciesSingle(apiKey.trim());
             Object.assign(alertPolicies, policies);
         }
 
@@ -157,7 +157,7 @@ class NewRelicClient {
 
         // Union all the policies together for each api key
         for(let apiKey of apiKeysArray) {
-            let violations = await this._getOldestViolationsPerPolicySingle(apiKey);
+            let violations = await this._getOldestViolationsPerPolicySingle(apiKey.trim());
             Object.assign(oldestViolationPerPolicy, violations);
         }
 
