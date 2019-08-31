@@ -81,7 +81,7 @@ const StatuspageController = function (config) {
     async function main() {
         // kick off process by first refreshing the NR policy list and status page components
         self.alertPolicies = await self.nrClient.getAlertPolicies(self.config.NR_API_KEYS);
-        self.statupageComponents = await self.spClient.getStatusPageComponents();
+        self.statupageComponents = await self.spClient.getFlattenedStatusPageComponents();
 
         // Get open NR violations
         self.oldestViolationPerPolicy = await self.nrClient.getOldestViolationsPerPolicy(self.config.NR_API_KEYS);
@@ -96,8 +96,9 @@ const StatuspageController = function (config) {
         const keys = Object.keys(self.statupageComponents);
 
         for (let i = 0; i < keys.length; i++) {
-            const component = self.statupageComponents[keys[i]];
-            const componentName = component.name.toLowerCase();
+            let componentName = keys[i];
+            const component = self.statupageComponents[componentName];
+            componentName = componentName.toLowerCase();
             let componentStatus = component.status;
             if (componentStatus) {
                 componentStatus = componentStatus.toLowerCase();
@@ -105,7 +106,7 @@ const StatuspageController = function (config) {
 
             // Check if this component is linked
             if (!self.alertPolicies[componentName]) {
-                console.log('Component not linked, skipping: ', componentName);
+                console.warn('Component not linked, skipping: ', componentName);
                 continue; // skip this component
             }
 
@@ -118,7 +119,7 @@ const StatuspageController = function (config) {
             // Component is linked and not overridden, sync status
             const oldest_violation = self.oldestViolationPerPolicy[componentName];
             if (oldest_violation) {
-                console.log("Found component matching policy name: ", component.name);
+                console.log("Found component matching policy name: ", componentName);
                 console.log("Violation duration, component status: ", oldest_violation.duration, componentStatus);
 
                 const new_status = getStatus(oldest_violation.duration);

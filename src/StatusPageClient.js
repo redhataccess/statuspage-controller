@@ -35,14 +35,15 @@ class StatusPageClient {
     }
 
     /**
-     * Returns a list of all the components on the status page
+     * Returns a list of all the components on the status page flattened by component group
      * @returns {Object} List of components
      */
-    async getStatusPageComponents() {
-        let statusPageComponents = {};
+    async getFlattenedStatusPageComponents() {
+        let flattenedComponents = {};
+        let componentGroupNames = {};
 
         try {
-            console.log('[SP Client] getStatusPageComponents');
+            console.log('[SP Client] getFlattenedStatusPageComponents');
 
             const url = this.SP_API_URL + "/components.json";
             const response = await axios.get(url, this.config);
@@ -54,9 +55,26 @@ class StatusPageClient {
 
                 for (let i = 0; i < data.length; i++) {
                     const component = data[i];
+
+                    // Save all group names into a lookup table
+                    if (component.group) {
+                        componentGroupNames[component.id] = component.name;
+                    }
+                }
+
+                // Now flatten components if they are in a group by prefixing with group name
+                for (let i = 0; i < data.length; i++) {
+                    const component = data[i];
                     const componentName = component.name.toLowerCase();
 
-                    statusPageComponents[componentName] = component;
+                    if (!component.group) {
+                        if (component.group_id) {
+                            let flatName = componentGroupNames[component.group_id] + '-' + componentName;
+                            flattenedComponents[flatName] = component;
+                        } else {
+                            flattenedComponents[componentName] = component;
+                        }
+                    }
                 }
             }
             else {
@@ -67,7 +85,7 @@ class StatusPageClient {
             console.error('[SP Client] error', error);
         }
 
-        return statusPageComponents;
+        return flattenedComponents;
     }
 
     async updateComponentStatus(component, status) {
