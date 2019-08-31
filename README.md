@@ -6,13 +6,39 @@ Automates actions on a Statuspage.io page based on New Relic Alerts.
 It will change the status of status page components if the component names matches the exact name of a New Relic Alert Policy.
 
 ## Mapping components
-Mapping is done by exact name match with optional namespacing for component groups.  Example: New Relic alert policy named "Downloads" and a Statuspage.io component named "Downloads",
+Mapping is done by exact name match with optional namespacing for component groups.  
+
+Example: 
+
+    # New Relic alert policy name 
+        Downloads
+         
+    # Statuspage.io component name
+        Downloads
+    
 If a New Relic incident is created for the "Downloads" policy, status page controller will update the matching
 "Downloads" component in Statuspage.io.
 
+### Component Groups
 Component groups are mapped by namespacing the New Relic alert policy with the following convention: "group-component"
 
-Example: If you have a compontent group in status page for access.redhat.com with a sub-component of Downloads, you would need to name your New Relic alert policy name "access.redhat.com-Downloads"
+If you have a compontent group in status page for access.redhat.com with a sub-component of Downloads, you would need to name your New Relic alert policy name "access.redhat.com-Downloads"
+
+Example mapping of component groups on status.redhat.com:
+    
+    # New Relic alert policy names
+    access.redhat.com-Downloads
+    access.redhat.com-Knowledgebase
+    developers.redhat.com-Downloads
+    developers.redhat.com-Blog
+    
+    # Statuspage.io component groups
+    access.redhat.com
+        L Downloads
+        L Knowledgebase
+    developers.redhat.com
+        L Downloads
+        L Blog
 
 
 ## Tresholds
