@@ -8,7 +8,6 @@ const Joi = require('joi');
 const NewRelicClient = require('./NewRelicClient');
 const StatusPageClient = require('./StatusPageClient');
 
-
 // Patch console.x methods in order to add timestamp information
 require("console-stamp")(console, {pattern: "mm/dd/yyyy HH:MM:ss.l"});
 
@@ -82,7 +81,7 @@ const StatuspageController = function (config) {
         self.oldestViolationPerPolicy = await self.nrClient.getOldestViolationsPerPolicy(self.config.NR_API_KEY);
 
         // Synchronize status page components based on NR incidents
-        syncStatusPageComponents();
+        await syncStatusPageComponents();
     }
 
     async function syncStatusPageComponents() {
@@ -124,8 +123,7 @@ const StatuspageController = function (config) {
                     // update status of component based on violation rules
                     await self.spClient.updateComponentStatus(component, new_status);
                 }
-            }
-            else if (componentStatus && componentStatus !== 'operational') {
+            } else if (componentStatus && componentStatus !== 'operational') {
                 console.log("Changing component to operational: ", componentName);
                 console.log("Current status: [" + componentStatus + "]");
 
@@ -190,24 +188,6 @@ const StatuspageController = function (config) {
 
 
     self.initializeVariables = function () {
-        self.nr_url = "https://api.newrelic.com/v2";
-        self.spio_url = "https://api.statuspage.io/v1/pages/" + self.config.SPIO_PAGE_ID;
-
-        self.nr_args = {
-            headers: {"X-Api-Key": self.config.NR_API_KEY} // request headers
-        };
-
-        self.spio_get_args = {
-            headers: {"Authorization": "OAuth " + self.config.SPIO_API_KEY}
-        };
-
-        self.spio_patch_args = {
-            headers: {
-                "Authorization": "OAuth " + self.config.SPIO_API_KEY,
-                "Content-Type": "application/x-www-form-urlencoded"
-            }
-        };
-
         self.oldestViolationPerPolicy = {};
 
         // New Relic alert polices
@@ -299,16 +279,13 @@ const StatuspageController = function (config) {
                     if (isNRSuccess && isSPSuccess) {
                         res.message = 'New Relic and statuspage.io connections established.';
                         res.ok = true;
-                    }
-                    else if (!isNRSuccess && !isSPSuccess) {
+                    } else if (!isNRSuccess && !isSPSuccess) {
                         res.message = 'Trouble connecting to New Relic and Status Page APIs';
                         res.ok = false;
-                    }
-                    else if (!isNRSuccess) {
+                    } else if (!isNRSuccess) {
                         res.message = 'Trouble connecting to New Relic API';
                         res.ok = false;
-                    }
-                    else if (!isSPSuccess) {
+                    } else if (!isSPSuccess) {
                         res.message = 'Trouble connecting to Status Page API';
                         res.ok = false;
                     }
@@ -346,8 +323,7 @@ const StatuspageController = function (config) {
                         let statupageComponent = self.statupageComponents[componentName];
                         if (statupageComponent) {
                             await self.spClient.updateComponentStatus(statupageComponent, override.new_status);
-                        }
-                        else {
+                        } else {
                             console.error('[overridesPostHandler] tried to set new status on undefined component:', componentName, override.new_status);
                         }
 
@@ -407,8 +383,7 @@ const StatuspageController = function (config) {
                 console.error('There was a problem initializing API: ', e);
                 console.error('For help refer to the API documentation: https://github.com/redhataccess/statuspage-controller');
             }
-        }
-        else {
+        } else {
             console.error("Invalid API config. For help refer to the API documentation: https://github.com/redhataccess/statuspage-controller");
         }
     };
@@ -452,8 +427,7 @@ const StatuspageController = function (config) {
             self.server.start((err) => {
                 if (err) {
                     console.error('There was an error starting the api server: ', err);
-                }
-                else {
+                } else {
                     /** @namespace self.server.info.uri */
                     console.log('API Server running at:', self.server.info.uri);
                 }

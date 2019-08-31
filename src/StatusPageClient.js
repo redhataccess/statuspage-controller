@@ -10,7 +10,10 @@ class StatusPageClient {
         this.SP_API_URL = "https://api.statuspage.io/v1/pages/" + pageId;
         this.SP_API_KEY = apiKey;
         this.config = {
-            headers: {"Authorization": "OAuth " + this.SP_API_KEY}
+            headers: {
+                "Authorization": "OAuth " + this.SP_API_KEY,
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
         };
     }
 
