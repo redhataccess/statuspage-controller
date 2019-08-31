@@ -136,12 +136,40 @@ class NewRelicClient {
         return alertPolicies;
     }
 
+    async getOldestViolationsPerPolicy(apiKey) {
+        let oldestViolationPerPolicy = {};
+
+        // see if this is an array or a string
+        if (Array.isArray(apiKey)) {
+            oldestViolationPerPolicy = await this._getOldestViolationsPerPolicyMulti(apiKey);
+        }
+        else {
+            oldestViolationPerPolicy = await this._getOldestViolationsPerPolicySingle(apiKey);
+        }
+
+        console.log("[NR Client] Total incidents:", Object.keys(oldestViolationPerPolicy).length);
+
+        return oldestViolationPerPolicy;
+    }
+
+    async _getOldestViolationsPerPolicyMulti(apiKeysArray) {
+        let oldestViolationPerPolicy = {};
+
+        // Union all the policies together for each api key
+        for(let apiKey of apiKeysArray) {
+            let violations = await this._getOldestViolationsPerPolicySingle(apiKey);
+            Object.assign(oldestViolationPerPolicy, violations);
+        }
+
+        return oldestViolationPerPolicy;
+    }
+
     /**
      * Returns a list of the oldest violation per alert policy
      * @param apiKey
      * @returns {Object} List of violations
      */
-    async getOldestViolationsPerPolicy(apiKey) {
+    async _getOldestViolationsPerPolicySingle(apiKey) {
         let currentPage = 1;
         let oldestViolationPerPolicy = {};
         let hadResponse;
@@ -200,13 +228,7 @@ class NewRelicClient {
             }
         } while (hadResponse);
 
-        const incidentCount = Object.keys(oldestViolationPerPolicy).length;
-        if (incidentCount > 0) {
-            console.log("[NR Client] Open New Relic incidents:", incidentCount);
-        }
-        else {
-            console.log("[NR Client] No open New Relic incidents");
-        }
+        console.log("[NR Client] Incident count:", Object.keys(oldestViolationPerPolicy).length);
 
         return oldestViolationPerPolicy;
     }

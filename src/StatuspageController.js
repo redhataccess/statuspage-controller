@@ -78,10 +78,10 @@ const StatuspageController = function (config) {
         self.statupageComponents = await self.spClient.getStatusPageComponents();
 
         // Get open NR violations
-        // self.oldestViolationPerPolicy = await self.nrClient.getOldestViolationsPerPolicy(self.config.NR_API_KEYS);
+        self.oldestViolationPerPolicy = await self.nrClient.getOldestViolationsPerPolicy(self.config.NR_API_KEYS);
 
         // Synchronize status page components based on NR incidents
-        // await syncStatusPageComponents();
+        await syncStatusPageComponents();
     }
 
     async function syncStatusPageComponents() {
