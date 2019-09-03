@@ -61,7 +61,7 @@ class NewRelicClient {
 
         // see if this is an array or a string
         if (Array.isArray(apiKey)) {
-            alertPolicies = await this._getAlertPoliciesSingleMulti(apiKey);
+            alertPolicies = await this._getAlertPoliciesMulti(apiKey);
         }
         else {
             alertPolicies = await this._getAlertPoliciesSingle(apiKey);
@@ -72,7 +72,7 @@ class NewRelicClient {
         return alertPolicies;
     }
 
-    async _getAlertPoliciesSingleMulti(apiKeysArray) {
+    async _getAlertPoliciesMulti(apiKeysArray) {
         let alertPolicies = {};
 
         // Union all the policies together for each api key
@@ -102,32 +102,25 @@ class NewRelicClient {
                 const url = this.NR_API_URL + "/alerts_policies.json?page=" + currentPage;
                 const response = await axios.get(url, this.config);
 
-                if (response.status === 200) {
-                    if (response.data.policies.length > 0) {
-                        let policies = response.data.policies;
+                if (response.data.policies.length > 0) {
+                    let policies = response.data.policies;
 
-                        // parsed response body as js object
-                        for (let i = 0; i < policies.length; i++) {
-                            const policy = policies[i];
-                            const policy_name = policy.name.toLowerCase();
-                            alertPolicies[policy_name] = policy;
-                        }
+                    // parsed response body as js object
+                    for (let i = 0; i < policies.length; i++) {
+                        const policy = policies[i];
+                        const policy_name = policy.name.toLowerCase();
+                        alertPolicies[policy_name] = policy;
+                    }
 
-                        // Try the next page
-                        currentPage++;
-                        hadResponse = true;
-                    }
-                    else {
-                        hadResponse = false;
-                    }
-                }
-                else {
-                    //TODO: Can remove this
-                    console.log("Invalid response from New Relic API. Status Code: " + response.status);
+                    // Try the next page
+                    currentPage++;
+                    hadResponse = true;
+                } else {
                     hadResponse = false;
                 }
-            } catch (error) {
-                console.error(error);
+            } catch (e) {
+                console.error('[NR Client] Failed to get New Relic alert polices, response code:', e.response.status, e.response.statusText);
+                return false
             }
         } while (hadResponse);
 
@@ -183,48 +176,40 @@ class NewRelicClient {
 
                 const url = this.NR_API_URL + "/alerts_violations.json?only_open=true&page=" + currentPage;
                 const response = await axios.get(url, this.config);
+                const violations = response.data.violations;
+                console.log("[NR Client] Violations on page: ", violations.length);
 
-                if (response.data.violations) {
-                    const violations = response.data.violations;
-                    console.log("[NR Client] Violations on page: ", violations.length);
+                if (violations.length > 0) {
+                    // parsed response body as js object
+                    for (let i = 0; i < violations.length; i++) {
+                        const violation = violations[i];
+                        //console.log("violation: ", violation);
+                        const policy_name = violation.policy_name.toLowerCase();
 
-                    if (violations.length > 0) {
-                        // parsed response body as js object
-                        for (let i = 0; i < violations.length; i++) {
-                            const violation = violations[i];
-                            //console.log("violation: ", violation);
-                            const policy_name = violation.policy_name.toLowerCase();
+                        // Save the oldest violation for this policy
+                        if (oldestViolationPerPolicy[policy_name]) {
+                            const oldest = oldestViolationPerPolicy[policy_name];
 
-                            // Save the oldest violation for this policy
-                            if (oldestViolationPerPolicy[policy_name]) {
-                                const oldest = oldestViolationPerPolicy[policy_name];
-
-                                if (violation.duration > oldest.duration) {
-                                    oldestViolationPerPolicy[policy_name] = violation;
-                                }
-                            }
-                            else {
+                            if (violation.duration > oldest.duration) {
                                 oldestViolationPerPolicy[policy_name] = violation;
                             }
+                        } else {
+                            oldestViolationPerPolicy[policy_name] = violation;
                         }
-
-                        console.log("[NR Client] Policies with open violations: ", Object.getOwnPropertyNames(oldestViolationPerPolicy));
-
-                        // recursively get and parse the next page
-                        currentPage++;
-                        hadResponse = true;
                     }
-                    else {
-                        hadResponse = false;
-                    }
-                }
-                else {
-                    //TODO: Can remove this
-                    console.log("Invalid response from New Relic API. Status Code: " + response.status);
+
+                    console.log("[NR Client] Policies with open violations: ", Object.getOwnPropertyNames(oldestViolationPerPolicy));
+
+                    // had data on this page so get and parse the next page
+                    currentPage++;
+                    hadResponse = true;
+                } else {
                     hadResponse = false;
                 }
-            } catch (error) {
-                console.error(error);
+
+            } catch (e) {
+                console.error('[NR Client] Failed to get New Relic open violations, response code:', e.response.status, e.response.statusText);
+                return false
             }
         } while (hadResponse);
 
