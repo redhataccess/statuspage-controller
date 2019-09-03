@@ -1,6 +1,6 @@
 {
   "name": "statuspage-controller",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Automates actions on a Statuspage.io page based on New Relic Alerts.",
   "keywords": [
     "Node.js",
