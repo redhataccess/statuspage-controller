@@ -313,34 +313,51 @@ const StatuspageController = function (config) {
 
                 const overridesPostHandler = async (request, h) => {
                     let override = request.payload;
+                    let isSuccess = false;
+                    let response;
 
                     console.log("[/api/overrides.json POST] ", override);
 
                     const componentName = override.component_name.toLowerCase();
 
-                    self._overrides[componentName] = override;
-
-                    // remove the override after the given seconds
-                    setTimeout(() => {
-                        delete self._overrides[componentName]
-                    }, override.seconds * 1000);
-
                     // Also optionally set the new status in statuspage.io
                     if (override.new_status) {
-                        let statupageComponent = self.statupageComponents[componentName];
-                        if (statupageComponent) {
-                            await self.spClient.updateComponentStatus(statupageComponent, override.new_status);
-                        } else {
-                            console.error('[overridesPostHandler] tried to set new status on undefined component:', componentName, override.new_status);
-                        }
+                        let statusPageComponent = self.statupageComponents[componentName];
+                        if (statusPageComponent) {
+                            isSuccess = await self.spClient.updateComponentStatus(statusPageComponent, override.new_status);
 
+                            if (isSuccess) {
+                                // Add the override to memory
+                                self._overrides[componentName] = override;
+
+                                // remove the override after the given seconds
+                                setTimeout(() => {
+                                    delete self._overrides[componentName]
+                                }, override.seconds * 1000);
+                            } else {
+                                console.error('[overridesPostHandler] Failed to update status page component:', componentName, override.new_status);
+                            }
+
+                        } else {
+                            console.error('[overridesPostHandler] Tried to set new status on undefined component:', componentName, override.new_status);
+                        }
                     }
 
-                    let response = h.response({
-                        message: "Successfully added override",
-                        component_name: override.component_name,
-                        seconds: override.seconds,
-                    });
+                    if (isSuccess) {
+                        response = h.response({
+                            message: "Successfully added override",
+                            component_name: override.component_name,
+                            seconds: override.seconds,
+                            success: true,
+                        });
+                    } else {
+                        response = h.response({
+                            message: "Failed to add override",
+                            component_name: componentName,
+                            success: false,
+                        });
+                    }
+
                     response.type('application/json');
                     return response;
                 };

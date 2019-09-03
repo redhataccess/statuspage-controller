@@ -47,42 +47,37 @@ class StatusPageClient {
 
             const url = this.SP_API_URL + "/components.json";
             const response = await axios.get(url, this.config);
+            const data = response.data;
 
-            if (response.status === 200) {
-                const data = response.data;
+            console.log("[SP Client] Statuspage.io components: ", data.length);
 
-                console.log("[SP Client] Statuspage.io components: ", data.length);
+            for (let i = 0; i < data.length; i++) {
+                const component = data[i];
 
-                for (let i = 0; i < data.length; i++) {
-                    const component = data[i];
-
-                    // Save all group names into a lookup table
-                    if (component.group) {
-                        componentGroupNames[component.id] = component.name;
-                    }
+                // Save all group names into a lookup table
+                if (component.group) {
+                    componentGroupNames[component.id] = component.name;
                 }
+            }
 
-                // Now flatten components if they are in a group by prefixing with group name
-                for (let i = 0; i < data.length; i++) {
-                    const component = data[i];
-                    const componentName = component.name.toLowerCase();
+            // Now flatten components if they are in a group by prefixing with group name
+            for (let i = 0; i < data.length; i++) {
+                const component = data[i];
+                const componentName = component.name.toLowerCase();
 
-                    if (!component.group) {
-                        if (component.group_id) {
-                            let flatName = componentGroupNames[component.group_id] + '-' + componentName;
-                            flattenedComponents[flatName] = component;
-                        } else {
-                            flattenedComponents[componentName] = component;
-                        }
+                if (!component.group) {
+                    if (component.group_id) {
+                        let flatName = componentGroupNames[component.group_id] + '-' + componentName;
+                        flattenedComponents[flatName] = component;
+                    } else {
+                        flattenedComponents[componentName] = component;
                     }
                 }
             }
-            else {
-                //TODO: Can remove this
-                console.log("[SP Client] Invalid response from statuspage.io API. Status code: " + response.status);
-            }
-        } catch (error) {
-            console.error('[SP Client] error', error);
+
+        } catch (e) {
+            console.error('[SP Client] Failed to get status page components, response code:', e.response.status, e.response.statusText);
+            return false
         }
 
         return flattenedComponents;
@@ -93,14 +88,14 @@ class StatusPageClient {
             const patchData = "component[status]=" + status;
             let url = this.SP_API_URL + "/components/" + component.id + ".json";
 
-            const response = await axios.patch(url, patchData, this.config);
-
-            if (response.status === 200) {
+            try {
+                await axios.patch(url, patchData, this.config);
                 console.log("[SP Client] Status updated successfully for component: ", component.name, status);
-            }
-            else {
-                //TODO: Replace this with try/catch block
-                console.error("[SP Client] Error updating status for component: ", component.name, status, response.status);
+                return true;
+            } catch (e) {
+                console.error("[SP Client] Error updating status for component: ", component.name);
+                console.error('[SP Client] Failed to update component, response code:', e.response.status, e.response.statusText);
+                return false;
             }
         }
     }
