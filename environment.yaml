@@ -2,7 +2,7 @@
 # Depends on "spc-secret" secret resource being created with the values for the keys
 # See: https://docs.openshift.com/container-platform/3.4/dev_guide/secrets.html
 env:
-  - name: NR_API_KEY
+  - name: NR_API_KEYS
     valueFrom:
       secretKeyRef:
         name: spc-secret

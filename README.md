@@ -1,12 +1,47 @@
 # Status Page Controller
 Automates actions on a Statuspage.io page based on New Relic Alerts. 
 
+![statuspagecontrolerdesign](https://cloud.githubusercontent.com/assets/3926730/17302336/c955254c-57e9-11e6-8ed9-af3062e0cd07.png)
+
 It will change the status of status page components if the component names matches the exact name of a New Relic Alert Policy.
 
-For Example, if you have a New Relic alert policy named "Downloads" and a Statuspage.io component named "Downloads",
-If a New Relic incident is created for the "Downloads" policy, status page controller will update the matching
-"Downloads" component in Statuspage.io based on the following default thresholds:
+## Mapping components
+Mapping is done by exact name match with optional namespacing for component groups.  
 
+Example: 
+
+    # New Relic alert policy name 
+        Downloads
+         
+    # Statuspage.io component name
+        Downloads
+    
+If a New Relic incident is created for the "Downloads" policy, status page controller will update the matching
+"Downloads" component in Statuspage.io.
+
+### Component Groups
+Component groups are mapped by namespacing the New Relic alert policy with the following convention: 
+
+    "group-component"
+
+Example mapping of component groups on status.redhat.com:
+    
+    # New Relic alert policy names
+    access.redhat.com-Downloads
+    access.redhat.com-Knowledgebase
+    developers.redhat.com-Downloads
+    developers.redhat.com-Blog
+    
+    # Statuspage.io component groups
+    access.redhat.com
+        L Downloads
+        L Knowledgebase
+    developers.redhat.com
+        L Downloads
+        L Blog
+
+
+## Tresholds
 1. yellow = Incident is at least 10 minutes old
 2. orange = Incident is at least 20 minutes old
 3. red = incident is 30+ minutes old
@@ -26,7 +61,7 @@ NOTE: the above can be configured, see below.
     spc.start();
       
 This usage will use all config defaults and expect the following environment variables to be set in order to work:
-* NR_API_KEY - Your New Relic API key
+* NR_API_KEYS - Your New Relic API key(s), this can be a single key or comma separated list of keys
 * SPIO_PAGE_ID - Your Statuspage.io Page ID
 * SPIO_API_KEY - Your Statuspage.io API key
 
@@ -36,7 +71,7 @@ This usage will use all config defaults and expect the following environment var
     var config = {
         POLL_INTERVAL: 10000,
         PORT: 8080,
-        NR_API_KEY: process.env.NR_API_KEY,
+        NR_API_KEYS: process.env.NR_API_KEYS,
         SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
         SPIO_API_KEY: process.env.SPIO_API_KEY,
     };
@@ -48,7 +83,7 @@ This usage will use all config defaults and expect the following environment var
     var config = {
         POLL_INTERVAL: 10000,
         PORT: 8080,
-        NR_API_KEY: process.env.NR_API_KEY,
+        NR_API_KEYS: process.env.NR_API_KEYS,
         SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
         SPIO_API_KEY: process.env.SPIO_API_KEY,
         THRESHOLDS: [
@@ -79,18 +114,102 @@ For example, if you wanted to go strait to major outage after 10 minutes then yo
             "status": "major_outage"
         }
     ]
+    
+### Debug
+Enable extra debug logging to the console.  Don't enable this in production.
 
-## Basic Design
-![statuspagecontrolerdesign](https://cloud.githubusercontent.com/assets/3926730/17302336/c955254c-57e9-11e6-8ed9-af3062e0cd07.png)
+    var StatuspageController = require('statuspage-controller')
+    var config = {
+        DEBUG: true,
+    };
+    var spc = new StatuspageController(config);
+    spc.start();
+    
+
+## API
+### Methods
+There are a few API methods that check the health of the controller
+and allow you to set component overrides: 
+
+* GET /api/healthcheck.json - Check the health of the controller
+* POST /api/overrides.json - Create a temporary override of a given statuspage.io component
+* GET /api/overrides.json - List current active overrides
+
+### Healthcheck
+Request
+
+    curl http://localhost:8080/api/healthcheck.json
+    
+Response
+
+    {"message":"New Relic and statuspage.io connections established.","ok":true}
+
+### Overrides
+Request
+
+    curl -X POST -H 'content-type:application/json' http://localhost:8080/api/overrides.json -d '{"component_name": "Downloads", "seconds":60, "new_status":"major_outage"}'
+    
+Response
+
+    {"message":"Successfully added override","component_name":"Downloads","seconds":60}
+
+### Authentication
+Optionally you can enable basic auth for the API.  You'll need to configure an htpasswrd file with user(s) created with `htpasswd` command.
+
+1. Either have htpasswd command installed with Apache, or [npm-htpasswd](https://www.npmjs.com/package/htpasswd)
+2. Create a user and new htpasswd file: `htpasswd -c /path/to/users.htpasswd myuser`
+3. Point the config at the password file: `HTPASSWD_FILE: '/path/to/users.htpasswd`
+
+Example:
+
+    var StatuspageController = require('statuspage-controller')
+    var config = {
+        HTPASSWD_FILE: '/path/to/users.htpasswd',
+    };
+    var spc = new StatuspageController(config);
+    spc.start();
+
+### SSL
+Optionally you can configure the API server to use SSL.  See [node.js https](https://nodejs.org/api/https.html#https_https_createserver_options_requestlistener)
+ 
+1. Either use an existing key and cert of create self-signed cert using the following method:
+`openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /path/to/selfsigned.key -out /path/to/selfsigned.crt`
+2. Point the config at your key and cert files using the `tls` object:
+
+Example:
+
+    var StatuspageController = require('statuspage-controller')
+    var config = {
+        TLS: {
+            key:  "/path/to/selfsigned.key",
+            cert: "/path/to/selfsigned.crt",
+        }
+    };
+    var spc = new StatuspageController(config);
+    spc.start();
+
+### Full Example
+Here is an example with all optional config options set:
+
+    var StatuspageController = require('statuspage-controller')
+    var config = {
+        POLL_INTERVAL: 10000,
+        PORT: 8080,
+        DEBUG: false,
+        NR_API_KEYS: process.env.NR_API_KEYS,
+        SPIO_PAGE_ID: process.env.SPIO_PAGE_ID,
+        SPIO_API_KEY: process.env.SPIO_API_KEY,
+        HTPASSWD_FILE: '/path/to/users.htpasswd',
+        TLS: {
+            key:  "/path/to/selfsigned.key",
+            cert: "/path/to/selfsigned.crt",
+        }
+    };
+    var spc = new StatuspageController(config);
+    spc.start();
 
 ## Sync vs Push
-Both New Relic and StatusPage.io have ways to automate via push.  New Relic alerts can post to a webhook, or send an email, and StatusPage.io components can be updated with a unique email.  The problem with this method is that if a message is ever lost, then the state between New Relic and StatusPage.io will get out of sync.
+Both New Relic and StatusPage.io have ways to automate via push.  New Relic alerts can post to a webhook, or send an email, and StatusPage.io components can be updated with a unique email.  The problem with this method is that if a message is ever lost, then the state between New Relic and StatusPage.io will get out of sync. Also you might not want to change the status of a component until a minimum threshold of failure has occurred.
 
 By synchronizing both systems with their APIs, the states between the two will always be kept in sync, even if an alert message is never received.  It also updates states faster than email.  As soon as a violation is created it will be picked up on the next sync.  If Status Controller ever goes down, the next time it is started it will sync the statuses to their current state.
 
-## Building the client view
-This is an experimental feature that is not fully implmenented yet.
-
-    npm run build-client
-
-That will create a `dist` directory, ready to be served.
